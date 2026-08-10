@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Paystack MTN Mobile Money</title>
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            padding: 2rem 1.5rem;
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #0a1628;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+        input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            margin-top: 0.3rem;
+        }
+        .btn-pay {
+            background: #0d9488;
+            color: white;
+            border: none;
+            padding: 0.9rem;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            width: 100%;
+            margin-top: 1.5rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-pay:hover {
+            background: #0b7a70;
+        }
+        .btn-pay:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #555;
+            min-height: 1.5rem;
+            word-break: break-word;
+        }
+        .note {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 1.2rem;
+            text-align: center;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .success {
+            color: #0d9488;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💳 Test Payment</h1>
+        <p class="subtitle">MTN Mobile Money (sandbox)</p>
+
+        <form id="paymentForm">
+            <label for="email">Email</label>
+            <input type="email" id="email" value="test@example.com" required />
+
+            <label for="amount">Amount (RWF)</label>
+            <input type="number" id="amount" value="100" min="1" required />
+
+            <button type="submit" class="btn-pay" id="payBtn">
+                <span>📱</span> Pay with MTN MoMo
+            </button>
+        </form>
+
+        <div id="status"></div>
+        <div class="note">Test mode – no real money will be charged.</div>
+    </div>
+
+    <script>
+        // ============================================
+        // ⚠️ REPLACE WITH YOUR TEST PUBLIC KEY
+        // ============================================
+        const PUBLIC_KEY = 'pk_test_f5c510accab158fe9d1201b251640ce0edd6860c';
+
+        const form = document.getElementById('paymentForm');
+        const emailInput = document.getElementById('email');
+        const amountInput = document.getElementById('amount');
+        const payBtn = document.getElementById('payBtn');
+        const statusDiv = document.getElementById('status');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = emailInput.value.trim();
+            const amount = parseInt(amountInput.value);
+
+            // Validate
+            if (!email || !amount || amount <= 0) {
+                statusDiv.innerHTML = '⚠️ Please enter a valid email and amount.';
+                statusDiv.className = 'error';
+                return;
+            }
+
+            // Disable button and show loading
+            payBtn.disabled = true;
+            statusDiv.innerHTML = '⏳ Initializing payment...';
+            statusDiv.className = '';
+
+            try {
+                // 🔹 Call our backend
+                const response = await fetch('/initialize-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, amount })
+                });
+
+                // Check if response is OK
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server error ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
+
+                if (!data.status) {
+                    throw new Error(data.error || 'Payment initialization failed');
+                }
+
+                const { authorization_url, reference } = data.data;
+
+                // 🔹 Open Paystack popup
+                const handler = PaystackPop.setup({
+                    key: PUBLIC_KEY,
+                    email: email,
+                    amount: amount * 100, // in kobo
+                    ref: reference,
+                    // Optional: restrict to mobile money only
+                    // channels: ['mobile_money'],
+                    callback: function(response) {
+                        // Payment completed (but you must verify via webhook)
+                        statusDiv.innerHTML = `✅ Payment successful! Reference: ${response.reference}`;
+                        statusDiv.className = 'success';
+                        payBtn.disabled = false;
+                        console.log('Callback response:', response);
+                    },
+                    onClose: function() {
+                        statusDiv.innerHTML = '🔄 Payment window closed.';
+                        statusDiv.className = '';
+                        payBtn.disabled = false;
+                    }
+                });
+
+                handler.openIframe();
+
+            } catch (error) {
+                console.error('Payment error:', error);
+                statusDiv.innerHTML = `❌ Error: ${error.message || 'Something went wrong'}`;
+                statusDiv.className = 'error';
+                payBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
