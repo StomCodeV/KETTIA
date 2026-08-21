@@ -2,19 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Private Message – Kettia</title>
-    <!-- Three.js for 3D Background -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Encrypted Archive – Kettia</title>
+    <!-- Three.js for 3D Heart Background -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            --bg-deep: #050507;
-            --surface: rgba(20, 20, 25, 0.65);
-            --surface-border: rgba(255, 255, 255, 0.08);
-            --primary: #ff2a70;
-            --primary-glow: rgba(255, 42, 112, 0.35);
-            --text-main: #f3f3f6;
-            --text-muted: #9494a0;
+            --bg-deep: #030305;
+            --surface: rgba(18, 18, 25, 0.85);
+            --surface-border: rgba(255, 255, 255, 0.1);
+            --primary: #ff1e56;
+            --primary-glow: rgba(255, 30, 86, 0.35);
+            --text-main: #f4f4f8;
+            --text-muted: #9494a8;
             --transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
@@ -26,17 +26,20 @@
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
+            -webkit-touch-callout: none;
         }
 
         body {
-            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-deep);
             color: var(--text-main);
             overflow: hidden;
             height: 100vh;
+            width: 100vw;
             display: flex;
             justify-content: center;
             align-items: center;
+            position: fixed;
         }
 
         #bg-canvas {
@@ -48,25 +51,25 @@
             z-index: -1;
         }
 
-        /* Ambient Glow Layer */
+        /* Soft Romantic Ambient Lighting */
         .ambient-glow {
             position: fixed;
-            width: 400px;
-            height: 400px;
+            width: 300px;
+            height: 300px;
             background: var(--primary-glow);
-            filter: blur(120px);
+            filter: blur(100px);
             border-radius: 50%;
             z-index: -1;
             pointer-events: none;
-            animation: floatGlow 8s ease-in-out infinite alternate;
+            animation: breatheGlow 8s ease-in-out infinite alternate;
         }
 
-        @keyframes floatGlow {
-            0% { transform: translate(-50px, -50px) scale(1); }
-            100% { transform: translate(50px, 50px) scale(1.15); }
+        @keyframes breatheGlow {
+            0% { transform: scale(0.8); opacity: 0.3; }
+            100% { transform: scale(1.3); opacity: 0.6; }
         }
 
-        /* Watermark Pattern */
+        /* Anti-Photography Watermark Matrix */
         .watermark {
             position: fixed;
             top: 0;
@@ -79,8 +82,8 @@
             flex-wrap: wrap;
             justify-content: space-around;
             align-content: space-around;
-            opacity: 0.025;
-            font-size: 1rem;
+            opacity: 0.03;
+            font-size: 0.8rem;
             color: #ffffff;
             letter-spacing: 2px;
             font-weight: 600;
@@ -88,14 +91,14 @@
             overflow: hidden;
         }
 
-        /* Security Shield (Blur & Overlay) */
+        /* Security Shield / Recording & Screenshot Blur Layer */
         #security-shield {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(5, 5, 7, 0.92);
+            background: rgba(3, 3, 5, 0.97);
             backdrop-filter: blur(30px);
             -webkit-backdrop-filter: blur(30px);
             z-index: 10000;
@@ -104,330 +107,204 @@
             align-items: center;
             flex-direction: column;
             text-align: center;
-            padding: 30px;
-            animation: fadeIn 0.3s ease;
+            padding: 24px;
         }
 
         #security-shield h2 {
-            color: #ff5252;
-            margin-bottom: 12px;
-            font-size: 1.7rem;
+            color: #ff3366;
+            margin-bottom: 8px;
+            font-size: 1.4rem;
             font-weight: 500;
         }
 
         #security-shield p {
             color: var(--text-muted);
-            font-size: 1rem;
+            font-size: 0.9rem;
         }
 
-        /* DevTools Unlock Modal */
+        /* DevTools Passcode Gate */
         #devtools-modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.92);
             backdrop-filter: blur(15px);
             z-index: 20000;
             display: none;
             justify-content: center;
             align-items: center;
+            padding: 20px;
         }
 
         .modal-content {
-            background: rgba(25, 25, 32, 0.85);
+            background: rgba(22, 22, 30, 0.95);
             border: 1px solid var(--surface-border);
-            padding: 35px;
+            padding: 25px 20px;
             border-radius: 20px;
             text-align: center;
-            max-width: 380px;
-            width: 90%;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 340px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
         }
 
         .modal-content h3 {
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             color: #fff;
-            font-size: 1.3rem;
-            font-weight: 500;
+            font-size: 1.2rem;
         }
 
         .modal-content p {
             color: var(--text-muted);
-            font-size: 0.85rem;
-            margin-bottom: 20px;
+            font-size: 0.8rem;
+            margin-bottom: 16px;
         }
 
         .modal-content input {
             width: 100%;
-            padding: 14px;
-            background: rgba(0,0,0,0.3);
+            padding: 12px;
+            background: rgba(0,0,0,0.5);
             border: 1px solid var(--surface-border);
             color: #fff;
             border-radius: 12px;
-            margin-bottom: 15px;
+            margin-bottom: 14px;
             text-align: center;
             font-size: 1.1rem;
             letter-spacing: 3px;
             outline: none;
-            transition: var(--transition);
         }
 
-        .modal-content input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 15px var(--primary-glow);
-        }
-
-        /* Main Container Card */
+        /* Main UI Container - Mobile First Layout */
         .container {
             width: 92%;
-            max-width: 600px;
+            max-width: 480px;
             background: var(--surface);
             border: 1px solid var(--surface-border);
-            border-radius: 24px;
-            padding: 40px;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            border-radius: 22px;
+            padding: 24px 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             z-index: 10;
             position: relative;
             max-height: 85vh;
             overflow-y: auto;
-            animation: scaleUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            -webkit-overflow-scrolling: touch;
         }
 
-        .container::-webkit-scrollbar {
-            width: 4px;
-        }
-        .container::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.1);
-            border-radius: 4px;
-        }
+        .container::-webkit-scrollbar { width: 3px; }
+        .container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
 
-        @keyframes scaleUp {
-            from { opacity: 0; transform: translateY(20px) scale(0.97); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
+        .section { display: none; opacity: 0; transition: opacity 0.4s ease; }
+        .section.active { display: block; opacity: 1; }
 
-        /* Sections */
-        .section {
-            display: none;
-            opacity: 0;
-            transition: opacity 0.4s ease;
-        }
+        /* Auth Layout */
+        .auth-header { text-align: center; margin-bottom: 20px; }
+        .auth-header h2 { font-size: 1.4rem; font-weight: 500; margin-bottom: 6px; }
+        .auth-header p { color: var(--text-muted); font-size: 0.85rem; line-height: 1.4; }
 
-        .section.active {
-            display: block;
-            opacity: 1;
-        }
-
-        /* Auth Screen */
-        .auth-header {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .auth-header h2 {
-            font-size: 1.6rem;
-            font-weight: 500;
-            margin-bottom: 8px;
-            letter-spacing: -0.5px;
-        }
-
-        .auth-header p {
-            color: var(--text-muted);
-            font-size: 0.92rem;
-        }
-
-        .input-group {
-            position: relative;
-            margin-bottom: 20px;
-        }
-
+        .input-group { position: relative; margin-bottom: 16px; }
         .input-group input {
             width: 100%;
-            padding: 15px 20px;
-            background: rgba(0,0,0,0.25);
+            padding: 14px 16px;
+            background: rgba(0,0,0,0.35);
             border: 1px solid var(--surface-border);
-            border-radius: 14px;
+            border-radius: 12px;
             color: #fff;
             font-size: 1rem;
             outline: none;
-            transition: var(--transition);
-        }
-
-        .input-group input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 20px var(--primary-glow);
         }
 
         .btn {
             width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #ff2a70, #ff5e62);
+            padding: 14px;
+            background: linear-gradient(135deg, #ff1e56, #ff4d79);
             border: none;
-            border-radius: 14px;
+            border-radius: 12px;
             color: white;
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.95rem;
             cursor: pointer;
-            box-shadow: 0 10px 25px var(--primary-glow);
+            box-shadow: 0 8px 20px var(--primary-glow);
             transition: var(--transition);
         }
+        .btn-secondary { background: rgba(255,255,255,0.06); box-shadow: none; border: 1px solid var(--surface-border); }
 
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 30px var(--primary-glow);
-        }
-
-        .btn-secondary {
-            background: rgba(255,255,255,0.06);
-            box-shadow: none;
-            border: 1px solid var(--surface-border);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255,255,255,0.1);
-            box-shadow: none;
-        }
-
-        /* Carousel Screen */
-        .carousel-wrapper {
-            text-align: center;
-        }
-
+        /* Carousel Loading */
         .carousel-container {
             position: relative;
             width: 100%;
-            height: 320px;
-            border-radius: 16px;
+            height: 260px;
+            border-radius: 14px;
             overflow: hidden;
-            margin: 20px 0;
+            margin: 16px 0;
             background: #000;
             border: 1px solid var(--surface-border);
         }
-
         .carousel-slide {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             object-fit: cover;
             opacity: 0;
-            transform: scale(1.05);
-            transition: opacity 1.2s ease, transform 6s ease;
+            transition: opacity 1.2s ease;
         }
+        .carousel-slide.active { opacity: 1; }
 
-        .carousel-slide.active {
-            opacity: 1;
-            transform: scale(1);
-        }
-
-        /* Message Display Screen */
-        .message-title {
-            font-size: 1.4rem;
-            font-weight: 500;
-            color: var(--primary);
-            margin-bottom: 20px;
-            letter-spacing: -0.5px;
-        }
-
+        /* Message Display */
+        .message-title { font-size: 1.25rem; font-weight: 500; color: var(--primary); margin-bottom: 14px; }
         .message-box {
-            font-size: 1.02rem;
-            line-height: 1.75;
-            color: #dcdce2;
+            font-size: 0.98rem;
+            line-height: 1.7;
+            color: #e2e2ec;
             white-space: pre-wrap;
-            margin-bottom: 30px;
-            min-height: 180px;
+            margin-bottom: 24px;
+            min-height: 160px;
             font-weight: 300;
         }
 
-        /* Options & Reply */
-        .options-box {
-            display: flex;
-            gap: 12px;
-            margin-top: 20px;
-        }
-
+        .options-box { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
         textarea {
-            width: 100%;
-            height: 120px;
-            background: rgba(0,0,0,0.3);
+            width: 100%; height: 110px;
+            background: rgba(0,0,0,0.4);
             border: 1px solid var(--surface-border);
-            border-radius: 14px;
-            color: #fff;
-            padding: 15px;
-            margin-top: 15px;
-            resize: none;
-            outline: none;
-            font-family: inherit;
-            transition: var(--transition);
-        }
-
-        textarea:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 20px var(--primary-glow);
+            border-radius: 12px;
+            color: #fff; padding: 12px;
+            margin-top: 12px; resize: none; outline: none;
+            font-family: inherit; font-size: 0.95rem;
         }
 
         .poetic-ending {
-            text-align: center;
-            font-style: italic;
-            color: #ff80ab;
-            margin-top: 25px;
-            line-height: 1.6;
-            font-weight: 300;
-            font-size: 1.05rem;
+            text-align: center; font-style: italic;
+            color: #ff80ab; margin-top: 20px; line-height: 1.5;
+            font-weight: 300; font-size: 0.98rem;
         }
 
-        /* Footer */
-        footer {
-            text-align: center;
-            margin-top: 35px;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            letter-spacing: 0.5px;
-        }
-
-        footer a {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 500;
-            transition: var(--transition);
-        }
-
-        footer a:hover {
-            opacity: 0.8;
-            text-decoration: underline;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
+        footer { text-align: center; margin-top: 24px; font-size: 0.75rem; color: var(--text-muted); }
+        footer a { color: var(--primary); text-decoration: none; font-weight: 500; }
     </style>
 </head>
 <body>
 
     <canvas id="bg-canvas"></canvas>
-    <div class="ambient-glow" style="top: 10%; left: 15%;"></div>
-    <div class="ambient-glow" style="bottom: 10%; right: 15%; background: rgba(100, 42, 255, 0.25);"></div>
+    <div class="ambient-glow" style="top: 15%; left: 10%;"></div>
+    <div class="ambient-glow" style="bottom: 15%; right: 10%; background: rgba(120, 30, 255, 0.2);"></div >
 
-    <!-- Watermark Pattern -->
+    <!-- Watermark Matrix -->
     <div class="watermark" id="watermark-container"></div>
 
     <!-- Security Shield -->
     <div id="security-shield">
-        <h2>🔒 Protected Content</h2>
-        <p>Screenshots, screen recordings, and background views are restricted for privacy.</p>
+        <h2>🔒 Secure Enclave Active</h2>
+        <p>External capture or tab switching has restricted content viewing.</p>
     </div>
 
-    <!-- DevTools Unlock Modal -->
+    <!-- DevTools Passcode Gate -->
     <div id="devtools-modal">
         <div class="modal-content">
-            <h3>Inspection Locked</h3>
-            <p>Enter administrative passcode to view source code.</p>
+            <h3>Inspection Restricted</h3>
+            <p>Enter master developer passcode to unlock source access.</p>
             <input type="password" id="dev-passcode" placeholder="••••">
             <button class="btn" onclick="verifyDevPasscode()">Authorize</button>
         </div>
@@ -437,106 +314,126 @@
         <!-- Step 1: Password Entry -->
         <div id="step-auth" class="section active">
             <div class="auth-header">
-                <h2>Confidential Access</h2>
-                <p>This message is uniquely encrypted for Kettia.</p>
+                <h2>Encrypted Space</h2>
+                <p>This message is uniquely secured for Kettia.</p>
             </div>
             <div class="input-group">
-                <input type="password" id="access-password" placeholder="Enter Access Password">
+                <input type="password" id="access-password" placeholder="Enter Access Password" inputmode="text">
             </div>
             <button class="btn" onclick="checkPassword()">Unlock Space</button>
         </div>
 
-        <!-- Step 2: Loading & Carousel -->
+        <!-- Step 2: Zero-Lag Loading Carousel -->
         <div id="step-loading" class="section">
-            <div class="carousel-wrapper">
-                <h3 style="font-weight: 400; font-size: 1.1rem; color: var(--text-muted);">Reliving moments...</h3>
+            <div style="text-align: center;">
+                <h3 style="font-weight: 400; font-size: 1rem; color: var(--text-muted); margin-bottom: 4px;">Reliving beautiful moments...</h3>
                 <div class="carousel-container">
-                    <img src="https://i.postimg.cc/1RVyd1kY/att-RL2ej-Tp8w-HBFf-If4Db-U-Zn5T8-eu-CK8p-Eycc-RE9j7w-Q.jpg" class="carousel-slide active" alt="Moment 1">
-                    <img src="https://i.postimg.cc/5y8d2bJk/Messenger-creation-441722c3-2cda-4105-998a-7138d70f3125.jpg" class="carousel-slide" alt="Moment 2">
-                    <img src="https://i.postimg.cc/htcghzfs/att-Kdm5t-C-m12XUQ-j-SFJd-VJ0Jj-Tyy-Mna-J5Awbt1Lxy-D4c.jpg" class="carousel-slide" alt="Moment 3">
-                    <img src="https://i.postimg.cc/Y95B7j5v/att-p-H0O-Gzuswv-Bx8hx-Ns-Wd3P5IRWbdj-Td4-lr-IVz9A-I.jpg" class="carousel-slide" alt="Moment 4">
+                    <img src="https://i.postimg.cc/1RVyd1kY/att-RL2ej-Tp8w-HBFf-If4Db-U-Zn5T8-eu-CK8p-Eycc-RE9j7w-Q.jpg" class="carousel-slide active" alt="M1">
+                    <img src="https://i.postimg.cc/5y8d2bJk/Messenger-creation-441722c3-2cda-4105-998a-7138d70f3125.jpg" class="carousel-slide" alt="M2">
+                    <img src="https://i.postimg.cc/htcghzfs/att-Kdm5t-C-m12XUQ-j-SFJd-VJ0Jj-Tyy-Mna-J5Awbt1Lxy-D4c.jpg" class="carousel-slide" alt="M3">
+                    <img src="https://i.postimg.cc/Y95B7j5v/att-p-H0O-Gzuswv-Bx8hx-Ns-Wd3P5IRWbdj-Td4-lr-IVz9A-I.jpg" class="carousel-slide" alt="M4">
                 </div>
                 <button class="btn" id="proceed-btn" style="display:none;" onclick="showLetter()">Open Message</button>
             </div>
         </div>
 
-        <!-- Step 3: Message Display -->
+        <!-- Step 3: Core Message -->
         <div id="step-message" class="section">
             <div class="message-title">Dearest Kettia,</div>
             <div class="message-box" id="typed-message"></div>
             
-            <div id="options-container" style="display:none; animation: fadeIn 0.6s ease;">
-                <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 14px;">How would you like to conclude this note?</p>
+            <div id="options-container" style="display:none;">
+                <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 10px;">How would you like to respond?</p>
                 <div class="options-box">
                     <button class="btn" onclick="showReplyBox()">Yes, I want to reply</button>
                     <button class="btn btn-secondary" onclick="showPoeticEnding()">No, just read</button>
                 </div>
             </div>
 
-            <div id="reply-container" style="display:none; animation: fadeIn 0.6s ease;">
-                <textarea id="reply-text" placeholder="Write your heartfelt reply here..."></textarea>
-                <button class="btn" style="margin-top: 15px;" onclick="sendReply()">Transmit Reply</button>
+            <div id="reply-container" style="display:none;">
+                <textarea id="reply-text" placeholder="Write your reply here..."></textarea>
+                <button class="btn" style="margin-top: 12px;" onclick="sendReply()">Send Reply</button>
             </div>
 
             <div id="poetic-ending" class="poetic-ending" style="display:none;">
-                "Some connections transcend words, lingering quietly in the spaces between heartbeats. Thank you for being part of this story."
+                "Some connections transcend words, lingering quietly in the spaces between heartbeats. Wishing you peace and happiness always."
             </div>
         </div>
 
         <footer>
-            ✨ Developed with care by <a href="https://chrisostom.vercel.app" target="_blank">TUYISENGE Jean Chrisostom</a>
+            ✨ Developed by <a href="https://chrisostom.vercel.app" target="_blank">TUYISENGE Jean Chrisostom</a>
         </footer>
     </div>
 
     <script>
+        // --- Preload Images Immediately for Zero-Lag ---
+        const imageUrls = [
+            "https://i.postimg.cc/1RVyd1kY/att-RL2ej-Tp8w-HBFf-If4Db-U-Zn5T8-eu-CK8p-Eycc-RE9j7w-Q.jpg",
+            "https://i.postimg.cc/5y8d2bJk/Messenger-creation-441722c3-2cda-4105-998a-7138d70f3125.jpg",
+            "https://i.postimg.cc/htcghzfs/att-Kdm5t-C-m12XUQ-j-SFJd-VJ0Jj-Tyy-Mna-J5Awbt1Lxy-D4c.jpg",
+            "https://i.postimg.cc/Y95B7j5v/att-p-H0O-Gzuswv-Bx8hx-Ns-Wd3P5IRWbdj-Td4-lr-IVz9A-I.jpg"
+        ];
+        imageUrls.forEach(url => { const img = new Image(); img.src = url; });
+
         // --- Watermark Pattern Generation ---
         const watermarkContainer = document.getElementById('watermark-container');
-        for (let i = 0; i < 35; i++) {
+        for (let i = 0; i < 30; i++) {
             const span = document.createElement('span');
             span.innerText = "Private • Kettia";
-            span.style.margin = "40px";
+            span.style.margin = "30px";
             watermarkContainer.appendChild(span);
         }
 
-        // --- Three.js Modern 3D Background ---
+        // --- Three.js Slow, Romantic Breathing 3D Heart ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-        const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 180;
-        const posArray = new Float32Array(particlesCount * 3);
+        const particleCount = 500;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
 
-        for(let i = 0; i < particlesCount * 3; i++) {
-            posArray[i] = (Math.random() - 0.5) * 12;
+        for (let i = 0; i < particleCount; i++) {
+            const t = Math.PI * 2 * Math.random();
+            const scale = 0.11;
+            const x = scale * 16 * Math.pow(Math.sin(t), 3);
+            const y = scale * (13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+            const z = (Math.random() - 0.5) * 1.2;
+            
+            positions[i * 3] = x;
+            positions[i * 3 + 1] = y;
+            positions[i * 3 + 2] = z;
         }
 
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        const particlesMaterial = new THREE.PointsMaterial({
-            size: 0.035,
-            color: '#ff2a70',
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        
+        const material = new THREE.PointsMaterial({
+            size: 0.04,
+            color: '#ff1e56',
             transparent: true,
-            opacity: 0.65
-        });
-        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(particlesMesh);
-        camera.position.z = 4;
-
-        let mouseX = 0, mouseY = 0;
-        document.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX - window.innerWidth / window.innerHeight) * 0.0005;
-            mouseY = (e.clientY - window.innerHeight / 2) * 0.0005;
+            opacity: 0.75,
+            blending: THREE.AdditiveBlending
         });
 
-        function animateBg() {
-            requestAnimationFrame(animateBg);
-            particlesMesh.rotation.y += 0.0012 + mouseX;
-            particlesMesh.rotation.x += 0.0006 + mouseY;
+        const heartParticles = new THREE.Points(geometry, material);
+        scene.add(heartParticles);
+        camera.position.z = 4.2;
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            // Very slow, gentle rotation to create a peaceful, romantic feel
+            heartParticles.rotation.y += 0.002;
+            
+            // Soft slow breathing/pulsing rhythm like a heartbeat
+            const time = Date.now() * 0.0015;
+            const scaleFactor = 1 + Math.sin(time) * 0.05;
+            heartParticles.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
             renderer.render(scene, camera);
         }
-        animateBg();
+        animate3D();
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -544,83 +441,72 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // --- Security & Protection Layers ---
+        // --- Security Logic ---
         let devToolsUnlocked = false;
         const shield = document.getElementById('security-shield');
         const devModal = document.getElementById('devtools-modal');
 
         document.addEventListener('contextmenu', e => {
-            if (!devToolsUnlocked) { e.preventDefault(); checkDevToolsAttempt(); }
+            if (!devToolsUnlocked) { e.preventDefault(); devModal.style.display = 'flex'; }
         });
 
         document.addEventListener('keydown', e => {
-            if (e.key === 'PrintScreen') {
-                triggerShield();
-                e.preventDefault();
-            }
-            if (e.ctrlKey && (e.key === 'p' || e.key === 's' || e.key === 'u' || e.key === 'c' || e.key === 'a')) {
+            if (e.key === 'PrintScreen') { triggerShield(); e.preventDefault(); }
+            if (e.ctrlKey && (e.key === 'p' || e.key === 's' || e.key === 'u' || e.key === 'c' || e.key === 'a' || e.key === 'i')) {
                 if (!devToolsUnlocked) {
                     e.preventDefault();
-                    if(e.key === 'u') checkDevToolsAttempt();
+                    if(e.key === 'u' || e.key === 'i') devModal.style.display = 'flex';
                 }
             }
             if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C'))) {
-                if (!devToolsUnlocked) {
-                    e.preventDefault();
-                    checkDevToolsAttempt();
-                }
+                if (!devToolsUnlocked) { e.preventDefault(); devModal.style.display = 'flex'; }
             }
         });
 
-        function checkDevToolsAttempt() {
-            devModal.style.display = 'flex';
-        }
-
         function verifyDevPasscode() {
-            const code = document.getElementById('dev-passcode').value;
-            if (code === '2006') {
+            if (document.getElementById('dev-passcode').value === '2006') {
                 devToolsUnlocked = true;
                 devModal.style.display = 'none';
             } else {
-                alert('Invalid Passcode');
+                alert('Access Denied');
             }
+        }
+
+        function triggerShield() {
+            shield.style.display = 'flex';
+            setTimeout(() => { shield.style.display = 'none'; }, 2500);
         }
 
         document.addEventListener('visibilitychange', () => {
             shield.style.display = document.hidden ? 'flex' : 'none';
         });
-
         window.addEventListener('blur', () => { shield.style.display = 'flex'; });
         window.addEventListener('focus', () => { shield.style.display = 'none'; });
 
-        // --- Core App Flow ---
-        const correctPassword = "kabar@2026";
-
+        // --- Flow Control ---
         function checkPassword() {
-            const pass = document.getElementById('access-password').value;
-            if (pass === correctPassword) {
+            if (document.getElementById('access-password').value === "kabar@2026") {
                 document.getElementById('step-auth').classList.remove('active');
-                const loadingStep = document.getElementById('step-loading');
-                loadingStep.classList.add('active');
+                document.getElementById('step-loading').classList.add('active');
                 startCarousel();
             } else {
-                alert("Incorrect entry password.");
+                alert("Incorrect password.");
             }
         }
 
         function startCarousel() {
             let slides = document.querySelectorAll('.carousel-slide');
-            let currentSlide = 0;
-            let slideInterval = setInterval(() => {
-                slides[currentSlide].classList.remove('active');
-                currentSlide = (currentSlide + 1) % slides.length;
-                slides[currentSlide].classList.add('active');
-            }, 2500);
+            let idx = 0;
+            let interval = setInterval(() => {
+                slides[idx].classList.remove('active');
+                idx = (idx + 1) % slides.length;
+                slides[idx].classList.add('active');
+            }, 2400);
 
             setTimeout(() => {
-                clearInterval(slideInterval);
+                clearInterval(interval);
                 document.getElementById('proceed-btn').style.display = 'block';
-            }, 10500);
+            }, 9600);
         }
 
         const fullMessageText = `From the very first moment our paths crossed, my world shifted into a brighter, warmer focus. You have brought a depth of joy and inspiration into my life that words can scarcely capture. 
@@ -632,13 +518,13 @@ Thank you for being the wonderful person you are, and for making life's journey 
         function showLetter() {
             document.getElementById('step-loading').classList.remove('active');
             document.getElementById('step-message').classList.add('active');
-            typeWriterEffect(fullMessageText, 0);
+            typeWriter(fullMessageText, 0);
         }
 
-        function typeWriterEffect(text, index) {
-            if (index < text.length) {
-                document.getElementById('typed-message').innerHTML += text.charAt(index);
-                setTimeout(() => typeWriterEffect(text, index + 1), 22);
+        function typeWriter(text, i) {
+            if (i < text.length) {
+                document.getElementById('typed-message').innerHTML += text.charAt(i);
+                setTimeout(() => typeWriter(text, i + 1), 22);
             } else {
                 document.getElementById('options-container').style.display = 'block';
             }
@@ -656,25 +542,15 @@ Thank you for being the wonderful person you are, and for making life's journey 
         }
 
         function sendReply() {
-            const replyContent = document.getElementById('reply-text').value;
-            if (!replyContent.trim()) {
-                alert("Please write something before transmitting.");
-                return;
-            }
-
-            const scriptURL = 'https://script.google.com/macros/s/AKfycbyyVpRYo-TXUrLzzq9dr1QRVkqF9s4J5KSOKwBRm41KD-6GSkQ7W7eoYnRFFBj1F7U4/exec';
+            const val = document.getElementById('reply-text').value;
+            if (!val.trim()) { alert("Please write a short reply first."); return; }
             
-            fetch(scriptURL, {
-                method: 'POST',
-                mode: 'no-cors',
+            fetch('https://script.google.com/macros/s/AKfycbyyVpRYo-TXUrLzzq9dr1QRVkqF9s4J5KSOKwBRm41KD-6GSkQ7W7eoYnRFFBj1F7U4/exec', {
+                method: 'POST', mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ recipient: 'Kettia', reply: replyContent })
-            }).then(() => {
-                alert("Your reply has been securely sent!");
-                document.getElementById('reply-container').style.display = 'none';
-                showPoeticEnding();
-            }).catch(() => {
-                alert("Transmission complete.");
+                body: JSON.stringify({ recipient: 'Kettia', reply: val })
+            }).finally(() => {
+                alert("Your message has been sent successfully.");
                 showPoeticEnding();
             });
         }
