@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Kettia · 3D Private Message</title>
 
     <!-- Fonts -->
@@ -15,21 +15,221 @@
     </script>
 
     <style>
-        /* ── SECURITY: source lock overlay (hidden by default) ── */
+        /* ── Reset & Base ── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            background: #0a0a1a;
+            color: #f0f0f5;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        /* ── Anti-selection ── */
+        ::selection {
+            background: transparent;
+            color: inherit;
+        }
+        ::-moz-selection {
+            background: transparent;
+            color: inherit;
+        }
+        img,
+        canvas,
+        video {
+            -webkit-user-drag: none;
+            user-drag: none;
+            -webkit-touch-callout: none;
+        }
+
+        /* ── Three.js canvas ── */
+        #three-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            display: block;
+            pointer-events: none;
+        }
+
+        /* ── UI Overlay ── */
+        .ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            pointer-events: none;
+            transition: filter 0.3s ease, backdrop-filter 0.3s;
+        }
+        .ui-overlay.blurred {
+            filter: blur(20px) brightness(0.6);
+            pointer-events: none;
+        }
+        .ui-overlay>* {
+            pointer-events: auto;
+        }
+
+        /* ── Watermark overlay (persistent) ── */
+        #watermarkOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 50;
+            pointer-events: none;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            mix-blend-mode: overlay;
+            opacity: 0.4;
+        }
+        #watermarkOverlay .watermark-text {
+            font-family: 'Dancing Script', cursive;
+            font-size: 8rem;
+            font-weight: 700;
+            color: rgba(255, 107, 157, 0.25);
+            text-shadow: 0 0 40px rgba(255, 107, 157, 0.3);
+            white-space: nowrap;
+            transform: rotate(-15deg) scale(1.5);
+            animation: watermarkFloat 25s linear infinite;
+            letter-spacing: 20px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        @keyframes watermarkFloat {
+            0% {
+                transform: rotate(-15deg) scale(1.5) translateX(-20%);
+                opacity: 0.25;
+            }
+            50% {
+                transform: rotate(-15deg) scale(1.7) translateX(10%);
+                opacity: 0.45;
+            }
+            100% {
+                transform: rotate(-15deg) scale(1.5) translateX(-20%);
+                opacity: 0.25;
+            }
+        }
+        /* Additional subtle moving watermarks */
+        #watermarkOverlay .watermark-sub {
+            position: absolute;
+            font-size: 1.4rem;
+            color: rgba(255, 200, 220, 0.2);
+            font-weight: 300;
+            letter-spacing: 4px;
+            animation: subFloat 18s linear infinite;
+        }
+        #watermarkOverlay .watermark-sub:nth-child(2) {
+            top: 15%;
+            left: 5%;
+            animation-duration: 22s;
+        }
+        #watermarkOverlay .watermark-sub:nth-child(3) {
+            bottom: 20%;
+            right: 5%;
+            animation-duration: 20s;
+            animation-delay: -5s;
+        }
+        @keyframes subFloat {
+            0%,
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+                opacity: 0.15;
+            }
+            25% {
+                transform: translate(30px, -20px) rotate(2deg);
+                opacity: 0.3;
+            }
+            75% {
+                transform: translate(-20px, 30px) rotate(-2deg);
+                opacity: 0.2;
+            }
+        }
+
+        /* ── Screenshot protection overlay ── */
+        #screenshotProtection {
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            pointer-events: none;
+            background: rgba(10, 10, 26, 0.92);
+            backdrop-filter: blur(50px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Inter', sans-serif;
+            flex-direction: column;
+            gap: 20px;
+            transition: opacity 0.5s ease;
+        }
+        #screenshotProtection.show {
+            display: flex;
+            animation: fadeIn 0.4s ease;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        #screenshotProtection .icon {
+            font-size: 4rem;
+            margin-bottom: 10px;
+        }
+        #screenshotProtection .msg {
+            color: #ff6b9d;
+            font-size: 1.6rem;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 1px;
+            max-width: 500px;
+        }
+        #screenshotProtection .sub {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        /* ── Source Lock Overlay ── */
         #sourceLockOverlay {
             position: fixed;
             inset: 0;
             z-index: 99999;
-            background: rgba(10, 10, 26, 0.95);
-            backdrop-filter: blur(30px);
+            background: rgba(10, 10, 26, 0.97);
+            backdrop-filter: blur(40px);
             display: none;
-            /* hidden by default */
             justify-content: center;
             align-items: center;
             flex-direction: column;
             padding: 30px;
             font-family: 'Inter', sans-serif;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.4s ease;
         }
         #sourceLockOverlay.show {
             display: flex;
@@ -106,110 +306,6 @@
             opacity: 1;
         }
 
-        /* ── Anti-screenshot: blur overlay ── */
-        #screenshotProtection {
-            position: fixed;
-            inset: 0;
-            z-index: 99998;
-            pointer-events: none;
-            background: rgba(10, 10, 26, 0.85);
-            backdrop-filter: blur(40px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            font-family: 'Inter', sans-serif;
-            font-size: 1.5rem;
-            color: #ff6b9d;
-            font-weight: 600;
-            text-align: center;
-            padding: 40px;
-            letter-spacing: 2px;
-            line-height: 1.8;
-        }
-        #screenshotProtection.show {
-            display: flex;
-        }
-        #screenshotProtection span {
-            background: rgba(255, 107, 157, 0.1);
-            padding: 20px 40px;
-            border-radius: 20px;
-            border: 2px solid rgba(255, 107, 157, 0.3);
-            box-shadow: 0 0 60px rgba(255, 107, 157, 0.2);
-        }
-
-        /* ── Reset & base ── */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            overflow: hidden;
-            background: #0a0a1a;
-            color: #f0f0f5;
-            height: 100vh;
-            width: 100vw;
-            position: relative;
-            user-select: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-        }
-
-        /* ── Anti-selection ── */
-        ::selection {
-            background: transparent;
-            color: inherit;
-        }
-        ::-moz-selection {
-            background: transparent;
-            color: inherit;
-        }
-        img,
-        canvas,
-        video {
-            -webkit-user-drag: none;
-            user-drag: none;
-            -webkit-touch-callout: none;
-        }
-
-        /* ── Three.js canvas ── */
-        #three-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            display: block;
-            pointer-events: none;
-        }
-
-        /* ── UI Overlay ── */
-        .ui-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            pointer-events: none;
-            transition: filter 0.3s ease;
-        }
-        .ui-overlay.blurred {
-            filter: blur(20px);
-            pointer-events: none;
-        }
-        .ui-overlay>* {
-            pointer-events: auto;
-        }
-
         /* ── Glass Card ── */
         .glass-card {
             background: rgba(20, 20, 45, 0.82);
@@ -230,7 +326,7 @@
             scrollbar-color: rgba(255, 107, 157, 0.3) transparent;
         }
         .glass-card.blurred {
-            filter: blur(15px);
+            filter: blur(12px);
         }
         .glass-card::-webkit-scrollbar {
             width: 4px;
@@ -682,6 +778,10 @@
             #sourceLockOverlay .lock-box {
                 padding: 32px 24px;
             }
+            #watermarkOverlay .watermark-text {
+                font-size: 4rem;
+                letter-spacing: 10px;
+            }
         }
         @media (max-width: 400px) {
             .card-inner {
@@ -701,39 +801,48 @@
                 visibility: hidden !important;
             }
             body::after {
-                content: "Printing is not allowed.";
+                content: "📛 Printing is not allowed on this private page.";
                 visibility: visible;
-                display: block;
+                display: flex;
+                align-items: center;
+                justify-content: center;
                 position: fixed;
                 inset: 0;
                 background: #0a0a1a;
                 color: #ff6b9d;
                 font-size: 2rem;
-                display: flex;
-                align-items: center;
-                justify-content: center;
                 z-index: 999999;
+                font-family: 'Inter', sans-serif;
             }
         }
     </style>
 </head>
 <body>
 
-    <!-- ─── SOURCE CODE LOCK (hidden until triggered) ─── -->
-    <div id="sourceLockOverlay">
-        <div class="lock-box">
-            <div class="icon">🔐</div>
-            <h2>Source Code Protected</h2>
-            <p>This page's source is locked. Enter the passcode to unlock.</p>
-            <input type="password" id="sourceLockInput" placeholder="Enter passcode" autocomplete="off" maxlength="10" />
-            <button class="btn-unlock" id="sourceUnlockBtn">Unlock 🔓</button>
-            <div id="sourceLockError" class="error-msg">❌ Incorrect passcode. Try again.</div>
-        </div>
+    <!-- ─── PERSISTENT WATERMARK OVERLAY ─── -->
+    <div id="watermarkOverlay">
+        <div class="watermark-text">Private · Kettia</div>
+        <div class="watermark-sub">💖 For you only</div>
+        <div class="watermark-sub">✨ 2026</div>
     </div>
 
     <!-- ─── SCREENSHOT PROTECTION OVERLAY ─── -->
     <div id="screenshotProtection">
-        <span>🔒 Screenshots &amp; recording are not allowed.<br />This content is private.</span>
+        <div class="icon">🔒</div>
+        <div class="msg">Screenshots &amp; recording are blocked</div>
+        <div class="sub">This content is private. Please respect that.</div>
+    </div>
+
+    <!-- ─── SOURCE CODE LOCK ─── -->
+    <div id="sourceLockOverlay">
+        <div class="lock-box">
+            <div class="icon">🔐</div>
+            <h2>Source Code Protected</h2>
+            <p>This page is locked. Enter the passcode to unlock.</p>
+            <input type="password" id="sourceLockInput" placeholder="Enter passcode" autocomplete="off" maxlength="10" />
+            <button class="btn-unlock" id="sourceUnlockBtn">Unlock 🔓</button>
+            <div id="sourceLockError" class="error-msg">❌ Incorrect passcode. Try again.</div>
+        </div>
     </div>
 
     <!-- ─── THREE.JS CANVAS ─── -->
@@ -748,7 +857,7 @@
 
     <script>
         // ═══════════════════════════════════════════════════════════════
-        //  0. SECURITY: SOURCE LOCK (triggered only on inspection attempt)
+        //  0. SECURITY: SOURCE LOCK (triggered only on inspection)
         // ═══════════════════════════════════════════════════════════════
         (function sourceLock() {
             const SOURCE_PASS = "2006";
@@ -759,7 +868,6 @@
 
             let sourceUnlocked = sessionStorage.getItem('sourceUnlocked') === 'true';
 
-            // If already unlocked, do nothing
             if (sourceUnlocked) {
                 overlay.style.display = 'none';
                 return;
@@ -774,9 +882,7 @@
                 overlay.classList.remove('show');
                 sourceUnlocked = true;
                 sessionStorage.setItem('sourceUnlocked', 'true');
-                // Restore console functionality
                 if (window._restoreConsole) window._restoreConsole();
-                // Allow shortcuts again (we'll conditionally not block)
             }
 
             function unlock() {
@@ -794,30 +900,12 @@
 
             btn.onclick = unlock;
             input.onkeypress = (e) => { if (e.key === 'Enter') unlock(); };
-
-            // Expose unlock function for debugging if needed
             window._unlockSource = unlock;
 
-            // ── Trigger overlay on dev tools attempts ──
-            const blockKeys = [
-                'F12',
-                'F11',
-                'F10',
-                'F9',
-                'F8',
-                'F7',
-                'F6',
-                'F5',
-                'F4',
-                'F3',
-                'F2',
-                'F1'
-            ];
+            // ── Triggers ──
+            const blockKeys = ['F12', 'F11', 'F10', 'F9', 'F8', 'F7', 'F6', 'F5', 'F4', 'F3', 'F2', 'F1'];
             document.addEventListener('keydown', (e) => {
-                // If already unlocked, allow everything
                 if (sourceUnlocked) return;
-
-                // Block and show overlay on F12, Ctrl+Shift+I, Ctrl+U, Ctrl+Shift+C, Ctrl+Shift+J, etc.
                 const isDevTool = (
                     e.key === 'F12' ||
                     (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) ||
@@ -832,17 +920,12 @@
                     showOverlay();
                     return false;
                 }
-
-                // Block PrintScreen
                 if (e.key === 'PrintScreen' || e.key === 'PrtSc' || e.key === 'PrtScr') {
                     e.preventDefault();
                     e.stopPropagation();
-                    // Also show overlay? Not necessary, but we can show a warning
-                    // We'll handle via separate anti-screenshot
+                    // We'll handle screenshot via antiScreenshot module
                     return false;
                 }
-
-                // Block Ctrl+S, Ctrl+P (save/print)
                 if ((e.ctrlKey || e.metaKey) && ['s', 'p'].includes(e.key.toLowerCase())) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -850,7 +933,6 @@
                 }
             }, true);
 
-            // ── Right-click triggers overlay ──
             document.addEventListener('contextmenu', (e) => {
                 if (sourceUnlocked) return;
                 e.preventDefault();
@@ -859,7 +941,7 @@
                 return false;
             }, true);
 
-            // ── DevTools detection via window size ──
+            // DevTools detection via size
             let devtoolsOpen = false;
             const checkDevTools = () => {
                 if (sourceUnlocked) return;
@@ -877,18 +959,16 @@
             };
             setInterval(checkDevTools, 800);
 
-            // ── Debugger trap ──
+            // Debugger trap
             setInterval(() => {
                 if (sourceUnlocked) return;
                 const start = performance.now();
                 debugger;
                 const end = performance.now();
-                if (end - start > 100) {
-                    showOverlay();
-                }
+                if (end - start > 100) showOverlay();
             }, 1500);
 
-            // ── Override console to prevent logging (but restore on unlock) ──
+            // Override console
             const noop = () => {};
             const consoleMethods = ['log', 'warn', 'error', 'info', 'debug', 'trace', 'dir', 'dirxml', 'group', 'groupEnd',
                 'time', 'timeEnd', 'count', 'assert', 'profile', 'profileEnd'
@@ -899,17 +979,12 @@
                 console[m] = noop;
             });
             window._restoreConsole = () => {
-                consoleMethods.forEach(m => {
-                    console[m] = originalConsole[m] || noop;
-                });
+                consoleMethods.forEach(m => { console[m] = originalConsole[m] || noop; });
             };
-
-            // ── Keyboard shortcut to unlock (if they know) ──
-            // We'll allow them to use the overlay only.
         })();
 
         // ═══════════════════════════════════════════════════════════════
-        //  0b. ANTI-SCREENSHOT & RECORDING PROTECTION
+        //  0b. ANTI-SCREENSHOT / RECORDING
         // ═══════════════════════════════════════════════════════════════
         (function antiScreenshot() {
             const uiOverlay = document.getElementById('uiOverlay');
@@ -921,13 +996,12 @@
             function protect() {
                 if (isProtected) return;
                 isProtected = true;
-                // Blur the UI
                 uiOverlay.classList.add('blurred');
                 glassCard.classList.add('blurred');
-                // Show overlay message
                 protectionOverlay.classList.add('show');
-                // Also disable pointer events on UI to prevent interaction
-                uiOverlay.style.pointerEvents = 'none';
+                // Also make the watermark more visible
+                document.getElementById('watermarkOverlay').style.opacity = '0.8';
+                document.querySelector('.watermark-text').style.color = 'rgba(255,107,157,0.6)';
             }
 
             function unprotect() {
@@ -936,51 +1010,44 @@
                 uiOverlay.classList.remove('blurred');
                 glassCard.classList.remove('blurred');
                 protectionOverlay.classList.remove('show');
-                uiOverlay.style.pointerEvents = '';
+                document.getElementById('watermarkOverlay').style.opacity = '0.4';
+                document.querySelector('.watermark-text').style.color = 'rgba(255,107,157,0.25)';
             }
 
-            // ── Detect when page becomes hidden (tab switch, app switch) ──
+            // ── Triggers ──
             document.addEventListener('visibilitychange', () => {
-                if (document.hidden) {
-                    protect();
-                } else {
-                    // Small delay to avoid flicker when switching back
-                    setTimeout(unprotect, 200);
-                }
+                if (document.hidden) protect();
+                else setTimeout(unprotect, 300);
             });
 
-            // ── Detect window blur (e.g., when user opens another app to take photo) ──
-            window.addEventListener('blur', () => {
+            window.addEventListener('blur', () => { protect(); });
+            window.addEventListener('focus', () => { setTimeout(unprotect, 400); });
+
+            window.addEventListener('beforeprint', (e) => { e.preventDefault();
                 protect();
-            });
-            window.addEventListener('focus', () => {
-                setTimeout(unprotect, 300);
-            });
+                alert('Printing is disabled.'); });
 
-            // ── Detect print attempt ──
-            window.addEventListener('beforeprint', (e) => {
-                protect();
-                // Also prevent print from happening
-                e.preventDefault();
-                // Show a message
-                alert('Printing is not allowed on this page.');
-                return false;
-            });
-
-            // ── Detect if user tries to use screenshot via keyboard (PrintScreen) ──
-            // Already handled in keydown, but we also protect
             document.addEventListener('keyup', (e) => {
                 if (e.key === 'PrintScreen' || e.key === 'PrtSc' || e.key === 'PrtScr') {
                     protect();
-                    setTimeout(unprotect, 1000);
+                    setTimeout(unprotect, 1200);
                 }
             });
 
-            // ── Warn if user tries to use screen recording (media capture) ──
-            // Not directly detectable, but we can monitor for fullscreen changes or similar.
-            // We'll add a note.
+            // ── Detect screen recording via media capture API (if possible) ──
+            // Not fully reliable but we can try to detect getDisplayMedia usage
+            if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+                const origGetDisplayMedia = navigator.mediaDevices.getDisplayMedia;
+                navigator.mediaDevices.getDisplayMedia = function(constraints) {
+                    protect();
+                    // Return a rejected promise to prevent capture
+                    return Promise.reject(new Error('Screen capture is blocked on this page.'));
+                };
+            }
 
-            // ── Expose a way to manually protect/unprotect (for testing) ──
+            // Also block getUserMedia for camera if needed (optional)
+            // We'll just block display capture.
+
             window._protect = protect;
             window._unprotect = unprotect;
         })();
@@ -993,7 +1060,6 @@
         const GOOGLE_SCRIPT_URL =
             "https://script.google.com/macros/s/AKfycbyyVpRYo-TXUrLzzq9dr1QRVkqF9s4J5KSOKwBRm41KD-6GSkQ7W7eoYnRFFBj1F7U4/exec";
 
-        // ── Your beautiful moments images (postimg) ──
         const IMAGES = [
             "https://i.postimg.cc/1RVyd1kY/att-RL2ej-Tp8w-HBFf-If4Db-U-Zn5T8-eu-CK8p-Eycc-RE9j7w-Q.jpg",
             "https://i.postimg.cc/5y8d2bJk/Messenger-creation-441722c3-2cda-4105-998a-7138d70f3125.jpg",
