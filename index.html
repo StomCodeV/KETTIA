@@ -222,6 +222,12 @@ footer a{color:var(--cyan);text-decoration:none}
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 
+<!-- ─── VERCEL ANALYTICS ─── -->
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+
 <script>
 "use strict";
 
@@ -272,6 +278,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbyyVpRYo-TXUrLzzq9dr1QR
 let inspectionUnlocked = false;
 let typedFinished = false;
 let typingTimer = null;
+let analyticsTracked = false;
 
 const $ = id => document.getElementById(id);
 const entry = $("entry");
@@ -281,6 +288,19 @@ const letter = $("letter");
 const options = $("options");
 const overlay = $("securityOverlay");
 const inspectModal = $("inspectModal");
+
+// ─── Custom Analytics Events ───
+function trackEvent(eventName, data = {}) {
+  try {
+    if (typeof window.va === 'function') {
+      window.va('event', { name: eventName, ...data });
+    }
+    // Also send to console for debugging
+    console.log(`📊 [Analytics] ${eventName}`, data);
+  } catch (e) {
+    // Silently fail
+  }
+}
 
 function showSecurityOverlay(){
   if(!app.classList.contains("hidden")) overlay.classList.remove("hidden");
@@ -308,6 +328,12 @@ function startLoading(){
     loader.classList.add("hidden");
     app.classList.remove("hidden");
     typeMessage();
+    
+    // Track that the message was opened
+    trackEvent('message_opened', { 
+      timestamp: new Date().toISOString(),
+      recipient: 'Kettia'
+    });
   },4800);
 }
 
@@ -324,6 +350,9 @@ function typeMessage(){
       cursor.remove();
       typedFinished=true;
       options.classList.remove("hidden");
+      
+      // Track that typing finished
+      trackEvent('message_fully_read');
       return;
     }
     cursor.before(document.createTextNode(MESSAGE_TEXT[i]));
@@ -334,10 +363,14 @@ function typeMessage(){
 $("enterBtn").addEventListener("click",()=>{
   if($("entryPassword").value === ENTRY_PASSWORD){
     $("entryError").textContent="";
+    // Track successful login
+    trackEvent('login_successful');
     startLoading();
   }else{
     $("entryError").textContent="Incorrect password.";
     $("entryPassword").select();
+    // Track failed attempt (anonymously)
+    trackEvent('login_failed');
   }
 });
 
@@ -349,6 +382,7 @@ $("yesBtn").addEventListener("click",()=>{
   $("replyBox").classList.remove("hidden");
   $("poem").classList.add("hidden");
   $("replyText").focus();
+  trackEvent('reply_started');
 });
 
 $("noBtn").addEventListener("click",()=>{
@@ -356,6 +390,7 @@ $("noBtn").addEventListener("click",()=>{
   $("poem").classList.remove("hidden");
   $("noBtn").disabled=true;
   $("yesBtn").disabled=true;
+  trackEvent('no_reply_chosen');
 });
 
 $("sendBtn").addEventListener("click",async()=>{
@@ -380,6 +415,12 @@ $("sendBtn").addEventListener("click",async()=>{
       mode:"no-cors",
       headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},
       body
+    });
+
+    // Track reply sent
+    trackEvent('reply_sent', { 
+      reply_length: text.length,
+      timestamp: new Date().toISOString()
     });
 
     status.textContent="Your reply was sent. Thank you. 💜";
@@ -446,6 +487,7 @@ document.addEventListener("keydown",e=>{
     e.preventDefault();
     e.stopPropagation();
     inspectModal.classList.remove("hidden");
+    trackEvent('devtools_attempt_blocked');
   }
 });
 
@@ -476,6 +518,7 @@ setInterval(()=>{
   if(detected && !devtoolsOpen){
     devtoolsOpen=true;
     inspectModal.classList.remove("hidden");
+    trackEvent('devtools_detected');
   }else if(!detected){
     devtoolsOpen=false;
   }
@@ -488,9 +531,11 @@ $("inspectBtn").addEventListener("click",()=>{
     $("inspectError").textContent="";
     document.body.style.userSelect="text";
     document.querySelector(".watermark").style.display="none";
+    trackEvent('inspection_unlocked');
   }else{
     $("inspectError").textContent="Incorrect inspection passcode.";
     $("inspectPassword").select();
+    trackEvent('inspection_failed');
   }
 });
 
@@ -607,6 +652,12 @@ document.addEventListener("visibilitychange",()=>{
     renderer.setSize(innerWidth,innerHeight);
   });
 })();
+
+// ─── Track page view on load ───
+trackEvent('page_viewed', {
+  url: window.location.href,
+  referrer: document.referrer || 'direct'
+});
 </script>
 </body>
 </html>
