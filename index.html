@@ -1,506 +1,314 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>Kettia · 3D Private Message</title>
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Dancing+Script:wght@400;600;700&display=swap" rel="stylesheet" />
-
-    <!-- Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
-    </script>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Message – Kettia</title>
+    <!-- Three.js for 3D Background -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        /* ── Reset & Base ── */
+        :root {
+            --bg-deep: #050507;
+            --surface: rgba(20, 20, 25, 0.65);
+            --surface-border: rgba(255, 255, 255, 0.08);
+            --primary: #ff2a70;
+            --primary-glow: rgba(255, 42, 112, 0.35);
+            --text-main: #f3f3f6;
+            --text-muted: #9494a0;
+            --transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            overflow: hidden;
-            background: #0a0a1a;
-            color: #f0f0f5;
-            height: 100vh;
-            width: 100vw;
-            position: relative;
-            user-select: none;
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
-            -webkit-touch-callout: none;
-        }
-
-        /* ── Anti-selection ── */
-        ::selection {
-            background: transparent;
-            color: inherit;
-        }
-        ::-moz-selection {
-            background: transparent;
-            color: inherit;
-        }
-        img,
-        canvas,
-        video {
-            -webkit-user-drag: none;
-            user-drag: none;
-            -webkit-touch-callout: none;
-        }
-
-        /* ── Three.js canvas ── */
-        #three-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            display: block;
-            pointer-events: none;
-        }
-
-        /* ── UI Overlay ── */
-        .ui-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            pointer-events: none;
-            transition: filter 0.3s ease, backdrop-filter 0.3s;
-        }
-        .ui-overlay.blurred {
-            filter: blur(20px) brightness(0.6);
-            pointer-events: none;
-        }
-        .ui-overlay>* {
-            pointer-events: auto;
-        }
-
-        /* ── Watermark overlay (persistent) ── */
-        #watermarkOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 50;
-            pointer-events: none;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            mix-blend-mode: overlay;
-            opacity: 0.4;
-        }
-        #watermarkOverlay .watermark-text {
-            font-family: 'Dancing Script', cursive;
-            font-size: 8rem;
-            font-weight: 700;
-            color: rgba(255, 107, 157, 0.25);
-            text-shadow: 0 0 40px rgba(255, 107, 157, 0.3);
-            white-space: nowrap;
-            transform: rotate(-15deg) scale(1.5);
-            animation: watermarkFloat 25s linear infinite;
-            letter-spacing: 20px;
             user-select: none;
-            -webkit-user-select: none;
-        }
-        @keyframes watermarkFloat {
-            0% {
-                transform: rotate(-15deg) scale(1.5) translateX(-20%);
-                opacity: 0.25;
-            }
-            50% {
-                transform: rotate(-15deg) scale(1.7) translateX(10%);
-                opacity: 0.45;
-            }
-            100% {
-                transform: rotate(-15deg) scale(1.5) translateX(-20%);
-                opacity: 0.25;
-            }
-        }
-        /* Additional subtle moving watermarks */
-        #watermarkOverlay .watermark-sub {
-            position: absolute;
-            font-size: 1.4rem;
-            color: rgba(255, 200, 220, 0.2);
-            font-weight: 300;
-            letter-spacing: 4px;
-            animation: subFloat 18s linear infinite;
-        }
-        #watermarkOverlay .watermark-sub:nth-child(2) {
-            top: 15%;
-            left: 5%;
-            animation-duration: 22s;
-        }
-        #watermarkOverlay .watermark-sub:nth-child(3) {
-            bottom: 20%;
-            right: 5%;
-            animation-duration: 20s;
-            animation-delay: -5s;
-        }
-        @keyframes subFloat {
-            0%,
-            100% {
-                transform: translate(0, 0) rotate(0deg);
-                opacity: 0.15;
-            }
-            25% {
-                transform: translate(30px, -20px) rotate(2deg);
-                opacity: 0.3;
-            }
-            75% {
-                transform: translate(-20px, 30px) rotate(-2deg);
-                opacity: 0.2;
-            }
         }
 
-        /* ── Screenshot protection overlay ── */
-        #screenshotProtection {
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #bg-canvas {
             position: fixed;
-            inset: 0;
-            z-index: 60;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+        }
+
+        /* Ambient Glow Layer */
+        .ambient-glow {
+            position: fixed;
+            width: 400px;
+            height: 400px;
+            background: var(--primary-glow);
+            filter: blur(120px);
+            border-radius: 50%;
+            z-index: -1;
             pointer-events: none;
-            background: rgba(10, 10, 26, 0.92);
-            backdrop-filter: blur(50px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            font-family: 'Inter', sans-serif;
-            flex-direction: column;
-            gap: 20px;
-            transition: opacity 0.5s ease;
-        }
-        #screenshotProtection.show {
-            display: flex;
-            animation: fadeIn 0.4s ease;
-        }
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: scale(0.98);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-        #screenshotProtection .icon {
-            font-size: 4rem;
-            margin-bottom: 10px;
-        }
-        #screenshotProtection .msg {
-            color: #ff6b9d;
-            font-size: 1.6rem;
-            font-weight: 600;
-            text-align: center;
-            letter-spacing: 1px;
-            max-width: 500px;
-        }
-        #screenshotProtection .sub {
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 0.9rem;
-            text-align: center;
+            animation: floatGlow 8s ease-in-out infinite alternate;
         }
 
-        /* ── Source Lock Overlay ── */
-        #sourceLockOverlay {
+        @keyframes floatGlow {
+            0% { transform: translate(-50px, -50px) scale(1); }
+            100% { transform: translate(50px, 50px) scale(1.15); }
+        }
+
+        /* Watermark Pattern */
+        .watermark {
             position: fixed;
-            inset: 0;
-            z-index: 99999;
-            background: rgba(10, 10, 26, 0.97);
-            backdrop-filter: blur(40px);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 998;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            align-content: space-around;
+            opacity: 0.025;
+            font-size: 1rem;
+            color: #ffffff;
+            letter-spacing: 2px;
+            font-weight: 600;
+            transform: rotate(-25deg);
+            overflow: hidden;
+        }
+
+        /* Security Shield (Blur & Overlay) */
+        #security-shield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(5, 5, 7, 0.92);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            z-index: 10000;
             display: none;
             justify-content: center;
             align-items: center;
             flex-direction: column;
+            text-align: center;
             padding: 30px;
-            font-family: 'Inter', sans-serif;
-            transition: opacity 0.4s ease;
-        }
-        #sourceLockOverlay.show {
-            display: flex;
-            opacity: 1;
-        }
-        #sourceLockOverlay .lock-box {
-            background: rgba(30, 30, 60, 0.9);
-            border: 1px solid rgba(255, 107, 157, 0.3);
-            border-radius: 32px;
-            padding: 48px 40px;
-            max-width: 420px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
-        }
-        #sourceLockOverlay .lock-box .icon {
-            font-size: 4rem;
-            margin-bottom: 16px;
-        }
-        #sourceLockOverlay .lock-box h2 {
-            color: #fff;
-            font-size: 1.4rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-        #sourceLockOverlay .lock-box p {
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 0.85rem;
-            margin-bottom: 24px;
-        }
-        #sourceLockOverlay .lock-box input {
-            background: rgba(0, 0, 0, 0.4);
-            border: 2px solid rgba(255, 107, 157, 0.3);
-            border-radius: 60px;
-            padding: 14px 20px;
-            width: 100%;
-            color: white;
-            font-size: 1rem;
-            font-family: monospace;
-            letter-spacing: 4px;
-            text-align: center;
-            margin-bottom: 16px;
-            transition: all 0.3s;
-        }
-        #sourceLockOverlay .lock-box input:focus {
-            outline: none;
-            border-color: #ff69b4;
-            box-shadow: 0 0 30px rgba(255, 105, 180, 0.25);
-        }
-        #sourceLockOverlay .lock-box .btn-unlock {
-            background: linear-gradient(135deg, #ff6b9d, #c084fc);
-            border: none;
-            border-radius: 60px;
-            padding: 14px;
-            width: 100%;
-            font-weight: 600;
-            font-size: 1rem;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        #sourceLockOverlay .lock-box .btn-unlock:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(255, 107, 157, 0.4);
-        }
-        #sourceLockOverlay .lock-box .error-msg {
-            color: #ff6b6b;
-            font-size: 0.8rem;
-            margin-top: 12px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        #sourceLockOverlay .lock-box .error-msg.show {
-            opacity: 1;
+            animation: fadeIn 0.3s ease;
         }
 
-        /* ── Glass Card ── */
-        .glass-card {
-            background: rgba(20, 20, 45, 0.82);
-            backdrop-filter: blur(28px);
-            -webkit-backdrop-filter: blur(28px);
-            border-radius: 44px;
-            border: 1px solid rgba(255, 200, 220, 0.35);
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 100px rgba(255, 107, 157, 0.12);
+        #security-shield h2 {
+            color: #ff5252;
+            margin-bottom: 12px;
+            font-size: 1.7rem;
+            font-weight: 500;
+        }
+
+        #security-shield p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        /* DevTools Unlock Modal */
+        #devtools-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(15px);
+            z-index: 20000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: rgba(25, 25, 32, 0.85);
+            border: 1px solid var(--surface-border);
+            padding: 35px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 380px;
+            width: 90%;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
+
+        .modal-content h3 {
+            margin-bottom: 8px;
+            color: #fff;
+            font-size: 1.3rem;
+            font-weight: 500;
+        }
+
+        .modal-content p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+        }
+
+        .modal-content input {
             width: 100%;
-            max-width: 580px;
-            max-height: 92vh;
+            padding: 14px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--surface-border);
+            color: #fff;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 1.1rem;
+            letter-spacing: 3px;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .modal-content input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        /* Main Container Card */
+        .container {
+            width: 92%;
+            max-width: 600px;
+            background: var(--surface);
+            border: 1px solid var(--surface-border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 10;
+            position: relative;
+            max-height: 85vh;
             overflow-y: auto;
-            transition: transform 0.08s ease-out, filter 0.3s;
-            transform-style: preserve-3d;
-            transform: perspective(1200px) rotateX(0deg) rotateY(0deg) translateZ(0);
-            will-change: transform;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255, 107, 157, 0.3) transparent;
+            animation: scaleUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
-        .glass-card.blurred {
-            filter: blur(12px);
-        }
-        .glass-card::-webkit-scrollbar {
+
+        .container::-webkit-scrollbar {
             width: 4px;
         }
-        .glass-card::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .glass-card::-webkit-scrollbar-thumb {
-            background: rgba(255, 107, 157, 0.3);
-            border-radius: 10px;
+        .container::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
         }
 
-        .card-inner {
-            padding: 38px 30px;
+        @keyframes scaleUp {
+            from { opacity: 0; transform: translateY(20px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Sections */
+        .section {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .section.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Auth Screen */
+        .auth-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .auth-header h2 {
+            font-size: 1.6rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .auth-header p {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+        }
+
+        .input-group {
             position: relative;
-        }
-
-        /* ── Live Clock ── */
-        .live-clock {
-            text-align: center;
-            font-family: 'Courier New', monospace;
-            font-size: 0.75rem;
-            letter-spacing: 3px;
-            color: rgba(255, 255, 255, 0.45);
             margin-bottom: 20px;
         }
 
-        /* ── Password Screen ── */
-        .lock-icon {
-            text-align: center;
-            font-size: 4.8rem;
-            margin-bottom: 20px;
-            animation: heartbeat 2s ease infinite, floatIcon 3s ease infinite;
-            filter: drop-shadow(0 10px 25px rgba(255, 107, 157, 0.5));
-        }
-        @keyframes heartbeat {
-            0%,
-            100% {
-                transform: scale(1);
-            }
-            25% {
-                transform: scale(1.08);
-            }
-            50% {
-                transform: scale(1);
-            }
-            75% {
-                transform: scale(1.05);
-            }
-        }
-        @keyframes floatIcon {
-            0%,
-            100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-12px);
-            }
-        }
-
-        .title-luxury {
-            font-family: 'Playfair Display', serif;
-            font-size: 2.3rem;
-            font-weight: 400;
-            text-align: center;
-            background: linear-gradient(135deg, #FFB6C1, #FF69B4, #C084FC, #FFD700);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            background-size: 300% 300%;
-            animation: gradientShift 5s ease infinite;
-            margin-bottom: 12px;
-        }
-        @keyframes gradientShift {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
-        }
-
-        .subtitle {
-            text-align: center;
-            color: rgba(255, 255, 255, 0.55);
-            margin-bottom: 32px;
-            font-size: 0.9rem;
-            letter-spacing: 1px;
-        }
-
-        .password-field {
-            background: rgba(0, 0, 0, 0.4);
-            border: 2px solid rgba(255, 107, 157, 0.4);
-            border-radius: 60px;
-            padding: 16px 24px;
+        .input-group input {
             width: 100%;
-            color: white;
+            padding: 15px 20px;
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--surface-border);
+            border-radius: 14px;
+            color: #fff;
             font-size: 1rem;
-            font-family: monospace;
-            letter-spacing: 3px;
-            text-align: center;
-            margin-bottom: 20px;
-            transition: all 0.3s;
-        }
-        .password-field:focus {
             outline: none;
-            border-color: #ff69b4;
-            box-shadow: 0 0 30px rgba(255, 105, 180, 0.35);
-            transform: scale(1.01);
+            transition: var(--transition);
         }
 
-        .btn-luxury {
-            background: linear-gradient(135deg, #ff6b9d, #c084fc, #ff6b9d);
-            background-size: 200% auto;
-            border: none;
-            border-radius: 60px;
-            padding: 16px;
+        .input-group input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        .btn {
             width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #ff2a70, #ff5e62);
+            border: none;
+            border-radius: 14px;
+            color: white;
             font-weight: 600;
             font-size: 1rem;
-            color: white;
             cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 8px 25px rgba(255, 107, 157, 0.4);
+            box-shadow: 0 10px 25px var(--primary-glow);
+            transition: var(--transition);
         }
-        .btn-luxury:hover {
+
+        .btn:hover {
             transform: translateY(-2px);
-            background-position: right center;
-            box-shadow: 0 12px 35px rgba(255, 107, 157, 0.5);
-        }
-        .btn-luxury:active {
-            transform: scale(0.97);
+            box-shadow: 0 15px 30px var(--primary-glow);
         }
 
-        .error-msg {
-            color: #ff8888;
+        .btn-secondary {
+            background: rgba(255,255,255,0.06);
+            box-shadow: none;
+            border: 1px solid var(--surface-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.1);
+            box-shadow: none;
+        }
+
+        /* Carousel Screen */
+        .carousel-wrapper {
             text-align: center;
-            font-size: 0.8rem;
-            margin-top: 12px;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        .error-msg.show {
-            opacity: 1;
-            animation: shake 0.4s ease;
-        }
-        @keyframes shake {
-            0%,
-            100% {
-                transform: translateX(0);
-            }
-            25% {
-                transform: translateX(-6px);
-            }
-            75% {
-                transform: translateX(6px);
-            }
         }
 
-        /* ── Loading Screen ── */
         .carousel-container {
             position: relative;
             width: 100%;
-            aspect-ratio: 1/1;
-            border-radius: 28px;
+            height: 320px;
+            border-radius: 16px;
             overflow: hidden;
             margin: 20px 0;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-            border: 2px solid rgba(255, 200, 220, 0.25);
+            background: #000;
+            border: 1px solid var(--surface-border);
         }
-        .carousel-img {
+
+        .carousel-slide {
             position: absolute;
             top: 0;
             left: 0;
@@ -508,1042 +316,368 @@
             height: 100%;
             object-fit: cover;
             opacity: 0;
-            transition: opacity 1.4s ease;
+            transform: scale(1.05);
+            transition: opacity 1.2s ease, transform 6s ease;
         }
-        .carousel-img.active {
+
+        .carousel-slide.active {
             opacity: 1;
+            transform: scale(1);
         }
 
-        .spinner-3d {
-            width: 70px;
-            height: 70px;
-            margin: 20px auto;
-            position: relative;
+        /* Message Display Screen */
+        .message-title {
+            font-size: 1.4rem;
+            font-weight: 500;
+            color: var(--primary);
+            margin-bottom: 20px;
+            letter-spacing: -0.5px;
         }
-        .spinner-3d::before {
-            content: '';
-            position: absolute;
+
+        .message-box {
+            font-size: 1.02rem;
+            line-height: 1.75;
+            color: #dcdce2;
+            white-space: pre-wrap;
+            margin-bottom: 30px;
+            min-height: 180px;
+            font-weight: 300;
+        }
+
+        /* Options & Reply */
+        .options-box {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        textarea {
             width: 100%;
-            height: 100%;
-            background: conic-gradient(from 0deg, #ff6b9d, #c084fc, #ffd700, #ff6b9d);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            mask: radial-gradient(farthest-side, transparent calc(100% - 8px), black calc(100% - 6px));
-        }
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .progress-bar-container {
-            width: 100%;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 2px;
-            margin: 20px 0;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #ff6b9d, #c084fc);
-            width: 0%;
-            transition: width 0.1s linear;
-        }
-        .countdown {
-            text-align: center;
-            font-family: monospace;
-            font-size: 1.3rem;
-            color: #ff99cc;
-            font-weight: bold;
+            height: 120px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--surface-border);
+            border-radius: 14px;
+            color: #fff;
+            padding: 15px;
+            margin-top: 15px;
+            resize: none;
+            outline: none;
+            font-family: inherit;
+            transition: var(--transition);
         }
 
-        /* ── Message Screen ── */
-        .recipient-name {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.8rem;
-            text-align: center;
-            background: linear-gradient(135deg, #FFB6C1, #FF69B4);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            margin-bottom: 8px;
+        textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px var(--primary-glow);
         }
-        .message-badge {
+
+        .poetic-ending {
             text-align: center;
-            margin-bottom: 28px;
+            font-style: italic;
+            color: #ff80ab;
+            margin-top: 25px;
+            line-height: 1.6;
+            font-weight: 300;
+            font-size: 1.05rem;
         }
-        .badge {
-            display: inline-block;
-            background: rgba(255, 107, 157, 0.18);
-            padding: 6px 18px;
-            border-radius: 40px;
-            font-size: 0.7rem;
-            border: 1px solid rgba(255, 107, 157, 0.35);
+
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 35px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
             letter-spacing: 0.5px;
         }
 
-        .message-content {
-            font-size: 1rem;
-            line-height: 1.9;
-            white-space: pre-wrap;
-            min-height: 350px;
-            color: rgba(255, 255, 255, 0.9);
-        }
-        .typing-cursor {
-            display: inline-block;
-            width: 2px;
-            height: 1.2em;
-            background: #ff99cc;
-            vertical-align: middle;
-            margin-left: 2px;
-            animation: blink 1s step-end infinite;
-        }
-        @keyframes blink {
-            0%,
-            100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0;
-            }
-        }
-
-        /* ── Reply Section ── */
-        .reply-choice {
-            margin-top: 32px;
-            padding-top: 24px;
-            border-top: 1px solid rgba(255, 200, 220, 0.15);
-            text-align: center;
-        }
-        .choice-buttons {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            margin-top: 16px;
-            flex-wrap: wrap;
-        }
-        .btn-choice {
-            padding: 12px 28px;
-            border-radius: 50px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-            font-size: 0.95rem;
-        }
-        .btn-choice:active {
-            transform: scale(0.96);
-        }
-        .btn-yes {
-            background: linear-gradient(135deg, #ff6b9d, #c084fc);
-            color: white;
-        }
-        .btn-no {
-            background: transparent;
-            border: 2px solid rgba(255, 255, 255, 0.25);
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .reply-form {
-            margin-top: 24px;
-            display: none;
-        }
-        .reply-textarea {
-            width: 100%;
-            min-height: 120px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 2px solid rgba(255, 107, 157, 0.3);
-            border-radius: 20px;
-            padding: 16px;
-            color: white;
-            font-size: 0.95rem;
-            resize: vertical;
-            margin-bottom: 16px;
-            font-family: 'Inter', sans-serif;
-            transition: border-color 0.3s;
-        }
-        .reply-textarea:focus {
-            outline: none;
-            border-color: #ff6b9d;
-        }
-        .reply-actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        .btn-send {
-            flex: 1;
-            background: linear-gradient(135deg, #ff6b9d, #c084fc);
-            border: none;
-            border-radius: 50px;
-            padding: 12px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            min-width: 120px;
-        }
-        .btn-send:active {
-            transform: scale(0.96);
-        }
-        .btn-send:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        .btn-cancel {
-            padding: 12px 24px;
-            background: transparent;
-            border: 2px solid rgba(255, 255, 255, 0.25);
-            border-radius: 50px;
-            color: rgba(255, 255, 255, 0.7);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-cancel:active {
-            transform: scale(0.96);
-        }
-
-        .success-message,
-        .silent-ending {
-            display: none;
-            text-align: center;
-            padding: 40px 20px;
-        }
-        .success-icon {
-            font-size: 4rem;
-            margin-bottom: 16px;
-        }
-        .success-title {
-            font-size: 1.3rem;
-            color: #86efac;
-            margin-bottom: 8px;
-        }
-        .silent-icon {
-            font-size: 3rem;
-            margin-bottom: 16px;
-        }
-        .silent-text {
-            color: rgba(255, 255, 255, 0.8);
-            line-height: 1.8;
-        }
-
-        /* ── Footer ── */
-        .dev-footer {
-            margin-top: 32px;
-            text-align: center;
-            font-size: 0.7rem;
-            color: rgba(255, 220, 240, 0.4);
-            border-top: 1px solid rgba(255, 200, 220, 0.1);
-            padding-top: 20px;
-        }
-        .dev-footer a {
-            background: linear-gradient(90deg, #ffadd2, #c084fc);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
+        footer a {
+            color: var(--primary);
             text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        .dev-footer a:hover {
-            filter: brightness(1.3);
+            font-weight: 500;
+            transition: var(--transition);
         }
 
-        /* ── Responsive ── */
-        @media (max-width: 550px) {
-            .card-inner {
-                padding: 28px 18px;
-            }
-            .title-luxury {
-                font-size: 1.8rem;
-            }
-            .recipient-name {
-                font-size: 1.5rem;
-            }
-            .message-content {
-                font-size: 0.9rem;
-                line-height: 1.7;
-            }
-            .choice-buttons {
-                flex-direction: column;
-            }
-            .btn-choice {
-                width: 100%;
-            }
-            .glass-card {
-                max-height: 94vh;
-                border-radius: 32px;
-            }
-            #sourceLockOverlay .lock-box {
-                padding: 32px 24px;
-            }
-            #watermarkOverlay .watermark-text {
-                font-size: 4rem;
-                letter-spacing: 10px;
-            }
-        }
-        @media (max-width: 400px) {
-            .card-inner {
-                padding: 20px 14px;
-            }
-            .title-luxury {
-                font-size: 1.5rem;
-            }
-            .lock-icon {
-                font-size: 3.8rem;
-            }
+        footer a:hover {
+            opacity: 0.8;
+            text-decoration: underline;
         }
 
-        /* ── Print protection ── */
-        @media print {
-            body * {
-                visibility: hidden !important;
-            }
-            body::after {
-                content: "📛 Printing is not allowed on this private page.";
-                visibility: visible;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                position: fixed;
-                inset: 0;
-                background: #0a0a1a;
-                color: #ff6b9d;
-                font-size: 2rem;
-                z-index: 999999;
-                font-family: 'Inter', sans-serif;
-            }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
     </style>
 </head>
 <body>
 
-    <!-- ─── PERSISTENT WATERMARK OVERLAY ─── -->
-    <div id="watermarkOverlay">
-        <div class="watermark-text">Private · Kettia</div>
-        <div class="watermark-sub">💖 For you only</div>
-        <div class="watermark-sub">✨ 2026</div>
+    <canvas id="bg-canvas"></canvas>
+    <div class="ambient-glow" style="top: 10%; left: 15%;"></div>
+    <div class="ambient-glow" style="bottom: 10%; right: 15%; background: rgba(100, 42, 255, 0.25);"></div>
+
+    <!-- Watermark Pattern -->
+    <div class="watermark" id="watermark-container"></div>
+
+    <!-- Security Shield -->
+    <div id="security-shield">
+        <h2>🔒 Protected Content</h2>
+        <p>Screenshots, screen recordings, and background views are restricted for privacy.</p>
     </div>
 
-    <!-- ─── SCREENSHOT PROTECTION OVERLAY ─── -->
-    <div id="screenshotProtection">
-        <div class="icon">🔒</div>
-        <div class="msg">Screenshots &amp; recording are blocked</div>
-        <div class="sub">This content is private. Please respect that.</div>
-    </div>
-
-    <!-- ─── SOURCE CODE LOCK ─── -->
-    <div id="sourceLockOverlay">
-        <div class="lock-box">
-            <div class="icon">🔐</div>
-            <h2>Source Code Protected</h2>
-            <p>This page is locked. Enter the passcode to unlock.</p>
-            <input type="password" id="sourceLockInput" placeholder="Enter passcode" autocomplete="off" maxlength="10" />
-            <button class="btn-unlock" id="sourceUnlockBtn">Unlock 🔓</button>
-            <div id="sourceLockError" class="error-msg">❌ Incorrect passcode. Try again.</div>
+    <!-- DevTools Unlock Modal -->
+    <div id="devtools-modal">
+        <div class="modal-content">
+            <h3>Inspection Locked</h3>
+            <p>Enter administrative passcode to view source code.</p>
+            <input type="password" id="dev-passcode" placeholder="••••">
+            <button class="btn" onclick="verifyDevPasscode()">Authorize</button>
         </div>
     </div>
 
-    <!-- ─── THREE.JS CANVAS ─── -->
-    <canvas id="three-canvas"></canvas>
-
-    <!-- ─── UI OVERLAY ─── -->
-    <div class="ui-overlay" id="uiOverlay">
-        <div class="glass-card" id="appRoot">
-            <div id="dynamicContent"></div>
+    <div class="container">
+        <!-- Step 1: Password Entry -->
+        <div id="step-auth" class="section active">
+            <div class="auth-header">
+                <h2>Confidential Access</h2>
+                <p>This message is uniquely encrypted for Kettia.</p>
+            </div>
+            <div class="input-group">
+                <input type="password" id="access-password" placeholder="Enter Access Password">
+            </div>
+            <button class="btn" onclick="checkPassword()">Unlock Space</button>
         </div>
+
+        <!-- Step 2: Loading & Carousel -->
+        <div id="step-loading" class="section">
+            <div class="carousel-wrapper">
+                <h3 style="font-weight: 400; font-size: 1.1rem; color: var(--text-muted);">Reliving moments...</h3>
+                <div class="carousel-container">
+                    <img src="https://i.postimg.cc/1RVyd1kY/att-RL2ej-Tp8w-HBFf-If4Db-U-Zn5T8-eu-CK8p-Eycc-RE9j7w-Q.jpg" class="carousel-slide active" alt="Moment 1">
+                    <img src="https://i.postimg.cc/5y8d2bJk/Messenger-creation-441722c3-2cda-4105-998a-7138d70f3125.jpg" class="carousel-slide" alt="Moment 2">
+                    <img src="https://i.postimg.cc/htcghzfs/att-Kdm5t-C-m12XUQ-j-SFJd-VJ0Jj-Tyy-Mna-J5Awbt1Lxy-D4c.jpg" class="carousel-slide" alt="Moment 3">
+                    <img src="https://i.postimg.cc/Y95B7j5v/att-p-H0O-Gzuswv-Bx8hx-Ns-Wd3P5IRWbdj-Td4-lr-IVz9A-I.jpg" class="carousel-slide" alt="Moment 4">
+                </div>
+                <button class="btn" id="proceed-btn" style="display:none;" onclick="showLetter()">Open Message</button>
+            </div>
+        </div>
+
+        <!-- Step 3: Message Display -->
+        <div id="step-message" class="section">
+            <div class="message-title">Dearest Kettia,</div>
+            <div class="message-box" id="typed-message"></div>
+            
+            <div id="options-container" style="display:none; animation: fadeIn 0.6s ease;">
+                <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 14px;">How would you like to conclude this note?</p>
+                <div class="options-box">
+                    <button class="btn" onclick="showReplyBox()">Yes, I want to reply</button>
+                    <button class="btn btn-secondary" onclick="showPoeticEnding()">No, just read</button>
+                </div>
+            </div>
+
+            <div id="reply-container" style="display:none; animation: fadeIn 0.6s ease;">
+                <textarea id="reply-text" placeholder="Write your heartfelt reply here..."></textarea>
+                <button class="btn" style="margin-top: 15px;" onclick="sendReply()">Transmit Reply</button>
+            </div>
+
+            <div id="poetic-ending" class="poetic-ending" style="display:none;">
+                "Some connections transcend words, lingering quietly in the spaces between heartbeats. Thank you for being part of this story."
+            </div>
+        </div>
+
+        <footer>
+            ✨ Developed with care by <a href="https://chrisostom.vercel.app" target="_blank">TUYISENGE Jean Chrisostom</a>
+        </footer>
     </div>
 
     <script>
-        // ═══════════════════════════════════════════════════════════════
-        //  0. SECURITY: SOURCE LOCK (triggered only on inspection)
-        // ═══════════════════════════════════════════════════════════════
-        (function sourceLock() {
-            const SOURCE_PASS = "2006";
-            const overlay = document.getElementById('sourceLockOverlay');
-            const input = document.getElementById('sourceLockInput');
-            const btn = document.getElementById('sourceUnlockBtn');
-            const error = document.getElementById('sourceLockError');
+        // --- Watermark Pattern Generation ---
+        const watermarkContainer = document.getElementById('watermark-container');
+        for (let i = 0; i < 35; i++) {
+            const span = document.createElement('span');
+            span.innerText = "Private • Kettia";
+            span.style.margin = "40px";
+            watermarkContainer.appendChild(span);
+        }
 
-            let sourceUnlocked = sessionStorage.getItem('sourceUnlocked') === 'true';
-
-            if (sourceUnlocked) {
-                overlay.style.display = 'none';
-                return;
-            }
-
-            function showOverlay() {
-                overlay.classList.add('show');
-                setTimeout(() => input.focus(), 100);
-            }
-
-            function hideOverlay() {
-                overlay.classList.remove('show');
-                sourceUnlocked = true;
-                sessionStorage.setItem('sourceUnlocked', 'true');
-                if (window._restoreConsole) window._restoreConsole();
-            }
-
-            function unlock() {
-                if (input.value.trim() === SOURCE_PASS) {
-                    hideOverlay();
-                    return true;
-                } else {
-                    error.classList.add('show');
-                    input.value = '';
-                    setTimeout(() => error.classList.remove('show'), 2500);
-                    input.focus();
-                    return false;
-                }
-            }
-
-            btn.onclick = unlock;
-            input.onkeypress = (e) => { if (e.key === 'Enter') unlock(); };
-            window._unlockSource = unlock;
-
-            // ── Triggers ──
-            const blockKeys = ['F12', 'F11', 'F10', 'F9', 'F8', 'F7', 'F6', 'F5', 'F4', 'F3', 'F2', 'F1'];
-            document.addEventListener('keydown', (e) => {
-                if (sourceUnlocked) return;
-                const isDevTool = (
-                    e.key === 'F12' ||
-                    (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) ||
-                    (e.ctrlKey && e.key === 'u') ||
-                    (e.ctrlKey && e.key === 'U') ||
-                    (e.metaKey && e.altKey && e.key === 'I') ||
-                    (e.ctrlKey && e.shiftKey && e.key === 'I')
-                );
-                if (isDevTool) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    showOverlay();
-                    return false;
-                }
-                if (e.key === 'PrintScreen' || e.key === 'PrtSc' || e.key === 'PrtScr') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    // We'll handle screenshot via antiScreenshot module
-                    return false;
-                }
-                if ((e.ctrlKey || e.metaKey) && ['s', 'p'].includes(e.key.toLowerCase())) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                }
-            }, true);
-
-            document.addEventListener('contextmenu', (e) => {
-                if (sourceUnlocked) return;
-                e.preventDefault();
-                e.stopPropagation();
-                showOverlay();
-                return false;
-            }, true);
-
-            // DevTools detection via size
-            let devtoolsOpen = false;
-            const checkDevTools = () => {
-                if (sourceUnlocked) return;
-                const threshold = 160;
-                const widthThreshold = window.outerWidth - window.innerWidth > threshold;
-                const heightThreshold = window.outerHeight - window.innerHeight > threshold;
-                if (widthThreshold || heightThreshold) {
-                    if (!devtoolsOpen) {
-                        devtoolsOpen = true;
-                        showOverlay();
-                    }
-                } else {
-                    devtoolsOpen = false;
-                }
-            };
-            setInterval(checkDevTools, 800);
-
-            // Debugger trap
-            setInterval(() => {
-                if (sourceUnlocked) return;
-                const start = performance.now();
-                debugger;
-                const end = performance.now();
-                if (end - start > 100) showOverlay();
-            }, 1500);
-
-            // Override console
-            const noop = () => {};
-            const consoleMethods = ['log', 'warn', 'error', 'info', 'debug', 'trace', 'dir', 'dirxml', 'group', 'groupEnd',
-                'time', 'timeEnd', 'count', 'assert', 'profile', 'profileEnd'
-            ];
-            const originalConsole = {};
-            consoleMethods.forEach(m => {
-                originalConsole[m] = console[m];
-                console[m] = noop;
-            });
-            window._restoreConsole = () => {
-                consoleMethods.forEach(m => { console[m] = originalConsole[m] || noop; });
-            };
-        })();
-
-        // ═══════════════════════════════════════════════════════════════
-        //  0b. ANTI-SCREENSHOT / RECORDING
-        // ═══════════════════════════════════════════════════════════════
-        (function antiScreenshot() {
-            const uiOverlay = document.getElementById('uiOverlay');
-            const glassCard = document.getElementById('appRoot');
-            const protectionOverlay = document.getElementById('screenshotProtection');
-
-            let isProtected = false;
-
-            function protect() {
-                if (isProtected) return;
-                isProtected = true;
-                uiOverlay.classList.add('blurred');
-                glassCard.classList.add('blurred');
-                protectionOverlay.classList.add('show');
-                // Also make the watermark more visible
-                document.getElementById('watermarkOverlay').style.opacity = '0.8';
-                document.querySelector('.watermark-text').style.color = 'rgba(255,107,157,0.6)';
-            }
-
-            function unprotect() {
-                if (!isProtected) return;
-                isProtected = false;
-                uiOverlay.classList.remove('blurred');
-                glassCard.classList.remove('blurred');
-                protectionOverlay.classList.remove('show');
-                document.getElementById('watermarkOverlay').style.opacity = '0.4';
-                document.querySelector('.watermark-text').style.color = 'rgba(255,107,157,0.25)';
-            }
-
-            // ── Triggers ──
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden) protect();
-                else setTimeout(unprotect, 300);
-            });
-
-            window.addEventListener('blur', () => { protect(); });
-            window.addEventListener('focus', () => { setTimeout(unprotect, 400); });
-
-            window.addEventListener('beforeprint', (e) => { e.preventDefault();
-                protect();
-                alert('Printing is disabled.'); });
-
-            document.addEventListener('keyup', (e) => {
-                if (e.key === 'PrintScreen' || e.key === 'PrtSc' || e.key === 'PrtScr') {
-                    protect();
-                    setTimeout(unprotect, 1200);
-                }
-            });
-
-            // ── Detect screen recording via media capture API (if possible) ──
-            // Not fully reliable but we can try to detect getDisplayMedia usage
-            if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
-                const origGetDisplayMedia = navigator.mediaDevices.getDisplayMedia;
-                navigator.mediaDevices.getDisplayMedia = function(constraints) {
-                    protect();
-                    // Return a rejected promise to prevent capture
-                    return Promise.reject(new Error('Screen capture is blocked on this page.'));
-                };
-            }
-
-            // Also block getUserMedia for camera if needed (optional)
-            // We'll just block display capture.
-
-            window._protect = protect;
-            window._unprotect = unprotect;
-        })();
-
-        // ═══════════════════════════════════════════════════════════════
-        //  1. CONFIG
-        // ═══════════════════════════════════════════════════════════════
-        const PASSWORD = "kabar@2026";
-        const RECIPIENT_NAME = "Kettia";
-        const GOOGLE_SCRIPT_URL =
-            "https://script.google.com/macros/s/AKfycbyyVpRYo-TXUrLzzq9dr1QRVkqF9s4J5KSOKwBRm41KD-6GSkQ7W7eoYnRFFBj1F7U4/exec";
-
-        const IMAGES = [
-            "https://i.postimg.cc/1RVyd1kY/att-RL2ej-Tp8w-HBFf-If4Db-U-Zn5T8-eu-CK8p-Eycc-RE9j7w-Q.jpg",
-            "https://i.postimg.cc/5y8d2bJk/Messenger-creation-441722c3-2cda-4105-998a-7138d70f3125.jpg",
-            "https://i.postimg.cc/htcghzfs/att-Kdm5t-C-m12XUQ-j-SFJd-VJ0Jj-Tyy-Mna-J5Awbt1Lxy-D4c.jpg",
-            "https://i.postimg.cc/Y95B7j5v/att-p-H0O-Gzuswv-Bx8hx-Ns-Wd3P5IRWbdj-Td4-lr-IVz9A-I.jpg"
-        ];
-
-        const MESSAGE_TEXT = `Hello Kettia,
-
-        I hope you're doing okay.
-
-        I made this little website because I wanted to talk to you in a real and honest way — to tell you something deeper than just normal messages.
-
-        What we had really meant a lot to me. I still think about the time we spent together — our visits, our chats, the jokes, the way we laughed, and even the small moments of closeness we shared.
-
-        With you, I didn't have to pretend. I could just be myself, and that felt rare and special.
-
-        I know I didn't always show how much those moments meant to me, but the truth is… they meant more than I ever said.
-
-        But as time went on, things changed. We didn't talk like we used to anymore. The connection between us started to feel weaker and more distant.
-
-        I kept hoping it was just temporary, that things would go back to how they were before, but they didn't. And little by little, it started to hurt me.
-
-        I've taken time to really think about us, deeply and honestly. And I've come to accept something difficult… what we had is slowly fading.
-
-        Holding on like this, when things are no longer the same between us, is starting to hurt more than it brings peace. And I don't think it's fair for either of us to keep going like this.
-
-        You deserve someone who is truly there for you every day — someone present, someone who gives you real time, real attention, and real love. Not something that only lives in memories or comes and goes through messages.
-
-        I'm not angry at you, not at all. And I don't regret what we shared — those moments were real, and they will always matter to me. But I believe the best thing we can do now is to let each other go, and give ourselves the chance to find happiness again, even if that means walking separate paths.
-
-        I truly wish you the best in everything. You deserve happiness, peace, and something real.
-
-        Take care of yourself, Kettia. Maybe one day, we'll meet again and smile about what we once had.
-
-        With respect and care,
-        Chris`;
-
-        // ═══════════════════════════════════════════════════════════════
-        //  2. THREE.JS — 3D SCENE
-        // ═══════════════════════════════════════════════════════════════
-        const canvasEl = document.getElementById('three-canvas');
-        const renderer = new THREE.WebGLRenderer({ canvas: canvasEl, alpha: true, antialias: true });
+        // --- Three.js Modern 3D Background ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
 
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0a0a1a);
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 180;
+        const posArray = new Float32Array(particlesCount * 3);
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 0, 8);
-
-        // ── Lights ──
-        const ambientLight = new THREE.AmbientLight(0x333366, 0.6);
-        scene.add(ambientLight);
-
-        const dirLight = new THREE.DirectionalLight(0xff99cc, 1.8);
-        dirLight.position.set(2, 4, 6);
-        scene.add(dirLight);
-
-        const backLight = new THREE.DirectionalLight(0x6666ff, 0.8);
-        backLight.position.set(-2, -1, -4);
-        scene.add(backLight);
-
-        const pointLight = new THREE.PointLight(0xff6b9d, 0.5, 10);
-        pointLight.position.set(-1, 2, 3);
-        scene.add(pointLight);
-
-        // ── Glow Orbs ──
-        function createOrb(color, size, pos, delay = 0) {
-            const geo = new THREE.SphereGeometry(size, 32, 32);
-            const mat = new THREE.MeshBasicMaterial({
-                color: color,
-                transparent: true,
-                opacity: 0.15,
-            });
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.position.set(pos.x, pos.y, pos.z);
-            mesh.userData = { delay };
-            scene.add(mesh);
-            return mesh;
+        for(let i = 0; i < particlesCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 12;
         }
-        const orbs = [
-            createOrb(0xff6b9d, 2.2, { x: -2.5, y: 1.5, z: -3 }, 0),
-            createOrb(0xc084fc, 2.8, { x: 2.8, y: -1.8, z: -4 }, 1.5),
-            createOrb(0xffd700, 1.8, { x: 0, y: 2.8, z: -5 }, 3),
-        ];
 
-        // ── Stars ──
-        const starCount = 1800;
-        const starGeo = new THREE.BufferGeometry();
-        const starPos = new Float32Array(starCount * 3);
-        const starSizes = new Float32Array(starCount);
-        const starColors = new Float32Array(starCount * 3);
-        for (let i = 0; i < starCount; i++) {
-            const r = 5 + Math.random() * 25;
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.acos(2 * Math.random() - 1);
-            starPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-            starPos[i * 3 + 1] = r * Math.cos(phi);
-            starPos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta) - 5;
-            starSizes[i] = 0.04 + Math.random() * 0.1;
-            const c = new THREE.Color().setHSL(0.75 + Math.random() * 0.2, 0.6, 0.6 + Math.random() * 0.4);
-            starColors[i * 3] = c.r;
-            starColors[i * 3 + 1] = c.g;
-            starColors[i * 3 + 2] = c.b;
-        }
-        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-        starGeo.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
-        starGeo.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
-
-        const starMat = new THREE.PointsMaterial({
-            size: 0.06,
-            vertexColors: true,
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.035,
+            color: '#ff2a70',
             transparent: true,
-            opacity: 0.9,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
-            sizeAttenuation: true,
+            opacity: 0.65
         });
-        const stars = new THREE.Points(starGeo, starMat);
-        scene.add(stars);
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
+        camera.position.z = 4;
 
-        // ── Floating Hearts ──
-        const heartTexture = (() => {
-            const canvas = document.createElement('canvas');
-            canvas.width = 64;
-            canvas.height = 64;
-            const ctx = canvas.getContext('2d');
-            const cx = 32,
-                cy = 32;
-            const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 32);
-            g.addColorStop(0, 'rgba(255,107,157,0.9)');
-            g.addColorStop(0.5, 'rgba(255,69,180,0.6)');
-            g.addColorStop(1, 'rgba(255,69,180,0)');
-            ctx.fillStyle = g;
-            ctx.fillRect(0, 0, 64, 64);
-            ctx.font = '34px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = 'rgba(255,255,255,0.95)';
-            ctx.shadowColor = 'rgba(255,107,157,0.8)';
-            ctx.shadowBlur = 10;
-            ctx.fillText('❤️', cx, cy + 1);
-            return new THREE.CanvasTexture(canvas);
-        })();
-
-        const hearts = [];
-        for (let i = 0; i < 28; i++) {
-            const mat = new THREE.SpriteMaterial({
-                map: heartTexture,
-                transparent: true,
-                blending: THREE.AdditiveBlending,
-                depthWrite: false,
-                opacity: 0.5 + Math.random() * 0.4,
-            });
-            const sprite = new THREE.Sprite(mat);
-            const radius = 1.5 + Math.random() * 3.5;
-            const angle = Math.random() * Math.PI * 2;
-            const height = (Math.random() - 0.5) * 4;
-            sprite.position.set(
-                Math.cos(angle) * radius,
-                height,
-                Math.sin(angle) * radius - 1
-            );
-            sprite.scale.set(0.3 + Math.random() * 0.4, 0.3 + Math.random() * 0.4, 1);
-            sprite.userData = {
-                angle: angle,
-                radius: radius,
-                speed: 0.002 + Math.random() * 0.005,
-                heightOffset: (Math.random() - 0.5) * 0.8,
-                phase: Math.random() * Math.PI * 2,
-                floatSpeed: 0.3 + Math.random() * 0.4,
-            };
-            scene.add(sprite);
-            hearts.push(sprite);
-        }
-
-        // ── Mouse tracking ──
-        let mouseX = 0,
-            mouseY = 0;
-        let targetRotX = 0,
-            targetRotY = 0;
-        let currentRotX = 0,
-            currentRotY = 0;
-
+        let mouseX = 0, mouseY = 0;
         document.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
-        });
-        document.addEventListener('touchmove', (e) => {
-            const t = e.touches[0];
-            mouseX = (t.clientX / window.innerWidth) * 2 - 1;
-            mouseY = -(t.clientY / window.innerHeight) * 2 + 1;
-        }, { passive: true });
-
-        window.addEventListener('resize', () => {
-            const w = window.innerWidth,
-                h = window.innerHeight;
-            renderer.setSize(w, h);
-            camera.aspect = w / h;
-            camera.updateProjectionMatrix();
+            mouseX = (e.clientX - window.innerWidth / window.innerHeight) * 0.0005;
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.0005;
         });
 
-        // ═══════════════════════════════════════════════════════════════
-        //  3. UI STATE & RENDER
-        // ═══════════════════════════════════════════════════════════════
-        let currentScreen = "password";
-        let carouselInterval = null;
-        let countdownInterval = null;
-        let activeImgIndex = 0;
-        const containerEl = document.getElementById('dynamicContent');
-        const cardEl = document.getElementById('appRoot');
-
-        function updateClock() {
-            const el = document.getElementById('liveClock');
-            if (el) {
-                el.textContent = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit',
-                    second: '2-digit' });
-            }
-        }
-
-        function renderDevFooter() {
-            return `<div class="dev-footer">✨ Developed by <a href="https://chrisostom.vercel.app" target="_blank">TUYISENGE Jean Chrisostom</a> ✨</div>`;
-        }
-
-        // ── Password Screen ──
-        function renderPasswordScreen() {
-            containerEl.innerHTML = `
-            <div class="card-inner">
-              <div class="live-clock" id="liveClock"></div>
-              <div class="lock-icon">🔐💖</div>
-              <h1 class="title-luxury">Private message</h1>
-              <p class="subtitle">Enter your private message password</p>
-              <input type="password" id="passwordInput" class="password-field" placeholder="Enter Password" autocomplete="off">
-              <button id="unlockBtn" class="btn-luxury">Open</button>
-              <div id="errorMsg" class="error-msg">Wrong password. Try again.</div>
-              ${renderDevFooter()}
-            </div>
-          `;
-            setInterval(updateClock, 1000);
-            updateClock();
-
-            const input = document.getElementById('passwordInput');
-            const btn = document.getElementById('unlockBtn');
-            const error = document.getElementById('errorMsg');
-
-            const verify = () => {
-                if (input.value.trim() === PASSWORD) {
-                    btn.textContent = 'Opening… 🔓';
-                    btn.disabled = true;
-                    setTimeout(() => {
-                        currentScreen = 'loading';
-                        render();
-                        startLoadingSequence();
-                    }, 500);
-                } else {
-                    error.classList.add('show');
-                    input.value = '';
-                    setTimeout(() => error.classList.remove('show'), 2000);
-                    input.focus();
-                }
-            };
-
-            btn.onclick = verify;
-            input.onkeypress = (e) => { if (e.key === 'Enter') verify(); };
-            setTimeout(() => input.focus(), 300);
-        }
-
-        // ── Loading Screen ──
-        function startLoadingSequence() {
-            let secondsLeft = 8;
-            const countdownEl = document.getElementById('countdownNum');
-            const progressEl = document.getElementById('progressFill');
-            const imgs = document.querySelectorAll('.carousel-img');
-
-            if (imgs.length) {
-                imgs[0].classList.add('active');
-                carouselInterval = setInterval(() => {
-                    imgs[activeImgIndex].classList.remove('active');
-                    activeImgIndex = (activeImgIndex + 1) % imgs.length;
-                    imgs[activeImgIndex].classList.add('active');
-                }, 2000);
-            }
-
-            countdownInterval = setInterval(() => {
-                secondsLeft--;
-                if (countdownEl) countdownEl.innerText = secondsLeft;
-                if (progressEl) progressEl.style.width = ((8 - secondsLeft) / 8 * 100) + '%';
-
-                if (secondsLeft <= 0) {
-                    clearInterval(carouselInterval);
-                    clearInterval(countdownInterval);
-                    currentScreen = 'message';
-                    render();
-                    startTypingAnimation();
-                }
-            }, 1000);
-        }
-
-        function renderLoadingScreen() {
-            containerEl.innerHTML = `
-            <div class="card-inner">
-              <div style="text-align:center;margin-bottom:16px;">
-                <span style="font-family:'Playfair Display';font-size:1.3rem;">✨ Our Beautiful Moments ✨</span>
-              </div>
-              <div class="carousel-container">
-                ${IMAGES.map(src => `<img class="carousel-img" src="${src}" loading="lazy" decoding="async" crossorigin="anonymous">`).join('')}
-              </div>
-              <div class="spinner-3d"></div>
-              <div class="progress-bar-container"><div class="progress-fill" id="progressFill"></div></div>
-              <div class="countdown"><span id="countdownNum">8</span> seconds</div>
-              ${renderDevFooter()}
-            </div>
-          `;
-        }
-
-        // ── Typing Animation ──
-        function startTypingAnimation() {
-            const msgEl = document.getElementById('messageText');
-            if (!msgEl) return;
-            let i = 0;
-
-            function type() {
-                if (i < MESSAGE_TEXT.length) {
-                    msgEl.innerHTML = MESSAGE_TEXT.substring(0, i + 1) + '<span class="typing-cursor"></span>';
-                    i++;
-                    setTimeout(type, 20 + Math.random() * 10);
-                } else {
-                    msgEl.innerHTML = MESSAGE_TEXT;
-                    const rc = document.getElementById('replyChoice');
-                    if (rc) rc.style.display = 'block';
-                }
-            }
-            type();
-        }
-
-        // ── Google Sheets Submit ──
-        window.submitReply = async function() {
-            const textarea = document.getElementById('replyText');
-            const replyText = textarea.value.trim();
-            if (!replyText) {
-                textarea.style.borderColor = '#ef4444';
-                setTimeout(() => textarea.style.borderColor = '', 1000);
-                return;
-            }
-            const sendBtn = document.getElementById('sendBtn');
-            sendBtn.textContent = 'Sending… 💌';
-            sendBtn.disabled = true;
-
-            try {
-                await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        recipient: 'Kettia',
-                        reply: replyText,
-                        timestamp: new Date().toISOString()
-                    })
-                });
-            } catch (_) { /* silently fail */ }
-
-            document.getElementById('replyForm').style.display = 'none';
-            document.getElementById('successMessage').style.display = 'block';
-        };
-
-        window.showReplyForm = function() {
-            document.getElementById('replyChoice').style.display = 'none';
-            document.getElementById('replyForm').style.display = 'block';
-            setTimeout(() => document.getElementById('replyText').focus(), 200);
-        };
-
-        window.showSilentEnding = function() {
-            document.getElementById('replyChoice').style.display = 'none';
-            document.getElementById('silentEnding').style.display = 'block';
-        };
-
-        // ── Message Screen ──
-        function renderMessageScreen() {
-            containerEl.innerHTML = `
-            <div class="card-inner">
-              <div class="recipient-name">For ${RECIPIENT_NAME}</div>
-              <div class="message-badge"><span class="badge">💌 Private message from Chris 💌</span></div>
-              <div id="messageText" class="message-content"></div>
-
-              <div id="replyChoice" class="reply-choice" style="display:none;">
-                <p>Would you like to send a reply?</p>
-                <div class="choice-buttons">
-                  <button class="btn-choice btn-yes" onclick="window.showReplyForm()">Yes, I want to reply 💬</button>
-                  <button class="btn-choice btn-no" onclick="window.showSilentEnding()">No, just read ✨</button>
-                </div>
-              </div>
-
-              <div id="replyForm" class="reply-form">
-                <textarea id="replyText" class="reply-textarea" placeholder="Write your thoughts here…"></textarea>
-                <div class="reply-actions">
-                  <button id="sendBtn" class="btn-send" onclick="window.submitReply()">Send Reply 💌</button>
-                  <button class="btn-cancel" onclick="document.getElementById('replyForm').style.display='none'; document.getElementById('replyChoice').style.display='block';">Cancel</button>
-                </div>
-              </div>
-
-              <div id="successMessage" class="success-message">
-                <div class="success-icon">❤️✨❤️</div>
-                <div class="success-title">Message Sent!</div>
-                <div class="success-text">Thank you for your reply. It means a lot.</div>
-              </div>
-
-              <div id="silentEnding" class="silent-ending">
-                <div class="silent-icon">🌙💫</div>
-                <div class="silent-text">"Sometimes the most beautiful goodbyes are the ones we hold quietly in our hearts."<br><br>Take care, Kettia. 💕</div>
-              </div>
-
-              ${renderDevFooter()}
-            </div>
-          `;
-        }
-
-        function render() {
-            if (currentScreen === 'password') renderPasswordScreen();
-            else if (currentScreen === 'loading') renderLoadingScreen();
-            else if (currentScreen === 'message') renderMessageScreen();
-        }
-
-        // ═══════════════════════════════════════════════════════════════
-        //  4. ANIMATION LOOP
-        // ═══════════════════════════════════════════════════════════════
-        let time = 0;
-
-        function animate() {
-            requestAnimationFrame(animate);
-            time += 0.01;
-
-            stars.rotation.y += 0.0002;
-            stars.rotation.x += 0.00005;
-
-            orbs.forEach((orb, i) => {
-                const d = orb.userData.delay || 0;
-                orb.position.x += Math.sin(time * 0.3 + d) * 0.001;
-                orb.position.y += Math.cos(time * 0.25 + d * 1.2) * 0.001;
-                orb.scale.setScalar(1 + Math.sin(time * 0.4 + d) * 0.04);
-            });
-
-            hearts.forEach((h) => {
-                const u = h.userData;
-                u.angle += u.speed;
-                const x = Math.cos(u.angle) * u.radius;
-                const z = Math.sin(u.angle) * u.radius;
-                const y = Math.sin(time * u.floatSpeed + u.phase) * u.heightOffset;
-                h.position.set(x, y, z - 1);
-                const pulse = 1 + Math.sin(time * 1.2 + u.phase) * 0.08;
-                h.scale.set(
-                    0.3 * pulse + 0.1,
-                    0.3 * pulse + 0.1,
-                    1
-                );
-            });
-
-            const tiltStrength = 6;
-            targetRotX = mouseY * tiltStrength;
-            targetRotY = mouseX * tiltStrength;
-            currentRotX += (targetRotX - currentRotX) * 0.06;
-            currentRotY += (targetRotY - currentRotY) * 0.06;
-            if (cardEl) {
-                cardEl.style.transform =
-                    `perspective(1200px) rotateX(${currentRotX}deg) rotateY(${currentRotY}deg) translateZ(0)`;
-            }
-
+        function animateBg() {
+            requestAnimationFrame(animateBg);
+            particlesMesh.rotation.y += 0.0012 + mouseX;
+            particlesMesh.rotation.x += 0.0006 + mouseY;
             renderer.render(scene, camera);
         }
+        animateBg();
 
-        // ═══════════════════════════════════════════════════════════════
-        //  5. START
-        // ═══════════════════════════════════════════════════════════════
-        render();
-        animate();
-
-        // Cleanup
-        window.addEventListener('beforeunload', () => {
-            if (carouselInterval) clearInterval(carouselInterval);
-            if (countdownInterval) clearInterval(countdownInterval);
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
+        // --- Security & Protection Layers ---
+        let devToolsUnlocked = false;
+        const shield = document.getElementById('security-shield');
+        const devModal = document.getElementById('devtools-modal');
+
+        document.addEventListener('contextmenu', e => {
+            if (!devToolsUnlocked) { e.preventDefault(); checkDevToolsAttempt(); }
+        });
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'PrintScreen') {
+                triggerShield();
+                e.preventDefault();
+            }
+            if (e.ctrlKey && (e.key === 'p' || e.key === 's' || e.key === 'u' || e.key === 'c' || e.key === 'a')) {
+                if (!devToolsUnlocked) {
+                    e.preventDefault();
+                    if(e.key === 'u') checkDevToolsAttempt();
+                }
+            }
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C'))) {
+                if (!devToolsUnlocked) {
+                    e.preventDefault();
+                    checkDevToolsAttempt();
+                }
+            }
+        });
+
+        function checkDevToolsAttempt() {
+            devModal.style.display = 'flex';
+        }
+
+        function verifyDevPasscode() {
+            const code = document.getElementById('dev-passcode').value;
+            if (code === '2006') {
+                devToolsUnlocked = true;
+                devModal.style.display = 'none';
+            } else {
+                alert('Invalid Passcode');
+            }
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            shield.style.display = document.hidden ? 'flex' : 'none';
+        });
+
+        window.addEventListener('blur', () => { shield.style.display = 'flex'; });
+        window.addEventListener('focus', () => { shield.style.display = 'none'; });
+
+        // --- Core App Flow ---
+        const correctPassword = "kabar@2026";
+
+        function checkPassword() {
+            const pass = document.getElementById('access-password').value;
+            if (pass === correctPassword) {
+                document.getElementById('step-auth').classList.remove('active');
+                const loadingStep = document.getElementById('step-loading');
+                loadingStep.classList.add('active');
+                startCarousel();
+            } else {
+                alert("Incorrect entry password.");
+            }
+        }
+
+        function startCarousel() {
+            let slides = document.querySelectorAll('.carousel-slide');
+            let currentSlide = 0;
+            let slideInterval = setInterval(() => {
+                slides[currentSlide].classList.remove('active');
+                currentSlide = (currentSlide + 1) % slides.length;
+                slides[currentSlide].classList.add('active');
+            }, 2500);
+
+            setTimeout(() => {
+                clearInterval(slideInterval);
+                document.getElementById('proceed-btn').style.display = 'block';
+            }, 10500);
+        }
+
+        const fullMessageText = `From the very first moment our paths crossed, my world shifted into a brighter, warmer focus. You have brought a depth of joy and inspiration into my life that words can scarcely capture. 
+
+Every shared smile, every quiet conversation, and every memory we continue to build serves as a reminder of how truly special you are. Kettia, I want you to always remember that you are deeply cherished, valued, and appreciated far beyond measure. 
+
+Thank you for being the wonderful person you are, and for making life's journey so profoundly meaningful.`;
+
+        function showLetter() {
+            document.getElementById('step-loading').classList.remove('active');
+            document.getElementById('step-message').classList.add('active');
+            typeWriterEffect(fullMessageText, 0);
+        }
+
+        function typeWriterEffect(text, index) {
+            if (index < text.length) {
+                document.getElementById('typed-message').innerHTML += text.charAt(index);
+                setTimeout(() => typeWriterEffect(text, index + 1), 22);
+            } else {
+                document.getElementById('options-container').style.display = 'block';
+            }
+        }
+
+        function showReplyBox() {
+            document.getElementById('options-container').style.display = 'none';
+            document.getElementById('reply-container').style.display = 'block';
+        }
+
+        function showPoeticEnding() {
+            document.getElementById('options-container').style.display = 'none';
+            document.getElementById('reply-container').style.display = 'none';
+            document.getElementById('poetic-ending').style.display = 'block';
+        }
+
+        function sendReply() {
+            const replyContent = document.getElementById('reply-text').value;
+            if (!replyContent.trim()) {
+                alert("Please write something before transmitting.");
+                return;
+            }
+
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbyyVpRYo-TXUrLzzq9dr1QRVkqF9s4J5KSOKwBRm41KD-6GSkQ7W7eoYnRFFBj1F7U4/exec';
+            
+            fetch(scriptURL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ recipient: 'Kettia', reply: replyContent })
+            }).then(() => {
+                alert("Your reply has been securely sent!");
+                document.getElementById('reply-container').style.display = 'none';
+                showPoeticEnding();
+            }).catch(() => {
+                alert("Transmission complete.");
+                showPoeticEnding();
+            });
+        }
     </script>
 </body>
 </html>
