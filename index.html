@@ -15,14 +15,15 @@
     </script>
 
     <style>
-        /* ── SECURITY: hide everything until source lock is bypassed ── */
+        /* ── SECURITY: source lock overlay (hidden by default) ── */
         #sourceLockOverlay {
             position: fixed;
             inset: 0;
             z-index: 99999;
-            background: rgba(10, 10, 26, 0.97);
+            background: rgba(10, 10, 26, 0.95);
             backdrop-filter: blur(30px);
-            display: flex;
+            display: none;
+            /* hidden by default */
             justify-content: center;
             align-items: center;
             flex-direction: column;
@@ -30,9 +31,9 @@
             font-family: 'Inter', sans-serif;
             transition: opacity 0.5s ease;
         }
-        #sourceLockOverlay.hidden {
-            opacity: 0;
-            pointer-events: none;
+        #sourceLockOverlay.show {
+            display: flex;
+            opacity: 1;
         }
         #sourceLockOverlay .lock-box {
             background: rgba(30, 30, 60, 0.9);
@@ -105,7 +106,38 @@
             opacity: 1;
         }
 
-        /* ── reset & base ── */
+        /* ── Anti-screenshot: blur overlay ── */
+        #screenshotProtection {
+            position: fixed;
+            inset: 0;
+            z-index: 99998;
+            pointer-events: none;
+            background: rgba(10, 10, 26, 0.85);
+            backdrop-filter: blur(40px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Inter', sans-serif;
+            font-size: 1.5rem;
+            color: #ff6b9d;
+            font-weight: 600;
+            text-align: center;
+            padding: 40px;
+            letter-spacing: 2px;
+            line-height: 1.8;
+        }
+        #screenshotProtection.show {
+            display: flex;
+        }
+        #screenshotProtection span {
+            background: rgba(255, 107, 157, 0.1);
+            padding: 20px 40px;
+            border-radius: 20px;
+            border: 2px solid rgba(255, 107, 157, 0.3);
+            box-shadow: 0 0 60px rgba(255, 107, 157, 0.2);
+        }
+
+        /* ── Reset & base ── */
         * {
             margin: 0;
             padding: 0;
@@ -126,7 +158,7 @@
             -ms-user-select: none;
         }
 
-        /* ── Anti-screenshot / selection ── */
+        /* ── Anti-selection ── */
         ::selection {
             background: transparent;
             color: inherit;
@@ -168,6 +200,11 @@
             align-items: center;
             padding: 20px;
             pointer-events: none;
+            transition: filter 0.3s ease;
+        }
+        .ui-overlay.blurred {
+            filter: blur(20px);
+            pointer-events: none;
         }
         .ui-overlay>* {
             pointer-events: auto;
@@ -185,12 +222,15 @@
             max-width: 580px;
             max-height: 92vh;
             overflow-y: auto;
-            transition: transform 0.08s ease-out;
+            transition: transform 0.08s ease-out, filter 0.3s;
             transform-style: preserve-3d;
             transform: perspective(1200px) rotateX(0deg) rotateY(0deg) translateZ(0);
             will-change: transform;
             scrollbar-width: thin;
             scrollbar-color: rgba(255, 107, 157, 0.3) transparent;
+        }
+        .glass-card.blurred {
+            filter: blur(15px);
         }
         .glass-card::-webkit-scrollbar {
             width: 4px;
@@ -654,27 +694,53 @@
                 font-size: 3.8rem;
             }
         }
+
+        /* ── Print protection ── */
+        @media print {
+            body * {
+                visibility: hidden !important;
+            }
+            body::after {
+                content: "Printing is not allowed.";
+                visibility: visible;
+                display: block;
+                position: fixed;
+                inset: 0;
+                background: #0a0a1a;
+                color: #ff6b9d;
+                font-size: 2rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 999999;
+            }
+        }
     </style>
 </head>
 <body>
 
-    <!-- ─── SOURCE CODE LOCK (PASSCODE: 2006) ─── -->
+    <!-- ─── SOURCE CODE LOCK (hidden until triggered) ─── -->
     <div id="sourceLockOverlay">
         <div class="lock-box">
             <div class="icon">🔐</div>
             <h2>Source Code Protected</h2>
-            <p>Enter the passcode to view this page's source</p>
+            <p>This page's source is locked. Enter the passcode to unlock.</p>
             <input type="password" id="sourceLockInput" placeholder="Enter passcode" autocomplete="off" maxlength="10" />
             <button class="btn-unlock" id="sourceUnlockBtn">Unlock 🔓</button>
             <div id="sourceLockError" class="error-msg">❌ Incorrect passcode. Try again.</div>
         </div>
     </div>
 
+    <!-- ─── SCREENSHOT PROTECTION OVERLAY ─── -->
+    <div id="screenshotProtection">
+        <span>🔒 Screenshots &amp; recording are not allowed.<br />This content is private.</span>
+    </div>
+
     <!-- ─── THREE.JS CANVAS ─── -->
     <canvas id="three-canvas"></canvas>
 
     <!-- ─── UI OVERLAY ─── -->
-    <div class="ui-overlay">
+    <div class="ui-overlay" id="uiOverlay">
         <div class="glass-card" id="appRoot">
             <div id="dynamicContent"></div>
         </div>
@@ -682,7 +748,7 @@
 
     <script>
         // ═══════════════════════════════════════════════════════════════
-        //  0. SECURITY: SOURCE CODE LOCK (passcode: 2006)
+        //  0. SECURITY: SOURCE LOCK (triggered only on inspection attempt)
         // ═══════════════════════════════════════════════════════════════
         (function sourceLock() {
             const SOURCE_PASS = "2006";
@@ -691,18 +757,31 @@
             const btn = document.getElementById('sourceUnlockBtn');
             const error = document.getElementById('sourceLockError');
 
-            // Check sessionStorage for bypass
-            if (sessionStorage.getItem('sourceUnlocked') === 'true') {
-                overlay.classList.add('hidden');
+            let sourceUnlocked = sessionStorage.getItem('sourceUnlocked') === 'true';
+
+            // If already unlocked, do nothing
+            if (sourceUnlocked) {
+                overlay.style.display = 'none';
                 return;
+            }
+
+            function showOverlay() {
+                overlay.classList.add('show');
+                setTimeout(() => input.focus(), 100);
+            }
+
+            function hideOverlay() {
+                overlay.classList.remove('show');
+                sourceUnlocked = true;
+                sessionStorage.setItem('sourceUnlocked', 'true');
+                // Restore console functionality
+                if (window._restoreConsole) window._restoreConsole();
+                // Allow shortcuts again (we'll conditionally not block)
             }
 
             function unlock() {
                 if (input.value.trim() === SOURCE_PASS) {
-                    sessionStorage.setItem('sourceUnlocked', 'true');
-                    overlay.classList.add('hidden');
-                    // Re-init console after unlock
-                    if (window._restoreConsole) window._restoreConsole();
+                    hideOverlay();
                     return true;
                 } else {
                     error.classList.add('show');
@@ -715,25 +794,11 @@
 
             btn.onclick = unlock;
             input.onkeypress = (e) => { if (e.key === 'Enter') unlock(); };
-            input.focus();
 
-            // Prevent closing overlay via ESC
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && !overlay.classList.contains('hidden')) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-            });
-
-            // Store unlock function globally for dev tools detection
+            // Expose unlock function for debugging if needed
             window._unlockSource = unlock;
-        })();
 
-        // ═══════════════════════════════════════════════════════════════
-        //  0b. SECURITY: ANTI-DEBUG, ANTI-DEVTOOLS, KEYBOARD BLOCK
-        // ═══════════════════════════════════════════════════════════════
-        (function security() {
-            // ── Block keyboard shortcuts ──
+            // ── Trigger overlay on dev tools attempts ──
             const blockKeys = [
                 'F12',
                 'F11',
@@ -749,31 +814,35 @@
                 'F1'
             ];
             document.addEventListener('keydown', (e) => {
-                // F12, Ctrl+Shift+I, Ctrl+U, Ctrl+Shift+C, Ctrl+Shift+J
-                if (e.key === 'F12' ||
+                // If already unlocked, allow everything
+                if (sourceUnlocked) return;
+
+                // Block and show overlay on F12, Ctrl+Shift+I, Ctrl+U, Ctrl+Shift+C, Ctrl+Shift+J, etc.
+                const isDevTool = (
+                    e.key === 'F12' ||
                     (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) ||
                     (e.ctrlKey && e.key === 'u') ||
-                    (e.ctrlKey && e.shiftKey && e.key === 'U') ||
                     (e.ctrlKey && e.key === 'U') ||
                     (e.metaKey && e.altKey && e.key === 'I') ||
-                    (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+                    (e.ctrlKey && e.shiftKey && e.key === 'I')
+                );
+                if (isDevTool) {
                     e.preventDefault();
                     e.stopPropagation();
-                    // Show lock overlay if not already shown
-                    const overlay = document.getElementById('sourceLockOverlay');
-                    if (overlay && overlay.classList.contains('hidden')) {
-                        overlay.classList.remove('hidden');
-                        document.getElementById('sourceLockInput').focus();
-                    }
+                    showOverlay();
                     return false;
                 }
+
                 // Block PrintScreen
                 if (e.key === 'PrintScreen' || e.key === 'PrtSc' || e.key === 'PrtScr') {
                     e.preventDefault();
                     e.stopPropagation();
+                    // Also show overlay? Not necessary, but we can show a warning
+                    // We'll handle via separate anti-screenshot
                     return false;
                 }
-                // Block Ctrl+S, Ctrl+P
+
+                // Block Ctrl+S, Ctrl+P (save/print)
                 if ((e.ctrlKey || e.metaKey) && ['s', 'p'].includes(e.key.toLowerCase())) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -781,41 +850,26 @@
                 }
             }, true);
 
-            // ── Block right-click ──
+            // ── Right-click triggers overlay ──
             document.addEventListener('contextmenu', (e) => {
+                if (sourceUnlocked) return;
                 e.preventDefault();
                 e.stopPropagation();
-                // Show lock overlay
-                const overlay = document.getElementById('sourceLockOverlay');
-                if (overlay && overlay.classList.contains('hidden')) {
-                    overlay.classList.remove('hidden');
-                    document.getElementById('sourceLockInput').focus();
-                }
+                showOverlay();
                 return false;
             }, true);
 
-            // ── Block drag & drop of images ──
-            document.addEventListener('dragstart', (e) => {
-                if (e.target.tagName === 'IMG') {
-                    e.preventDefault();
-                    return false;
-                }
-            }, true);
-
-            // ── DevTools detection ──
+            // ── DevTools detection via window size ──
             let devtoolsOpen = false;
             const checkDevTools = () => {
+                if (sourceUnlocked) return;
                 const threshold = 160;
                 const widthThreshold = window.outerWidth - window.innerWidth > threshold;
                 const heightThreshold = window.outerHeight - window.innerHeight > threshold;
                 if (widthThreshold || heightThreshold) {
                     if (!devtoolsOpen) {
                         devtoolsOpen = true;
-                        const overlay = document.getElementById('sourceLockOverlay');
-                        if (overlay && overlay.classList.contains('hidden')) {
-                            overlay.classList.remove('hidden');
-                            document.getElementById('sourceLockInput').focus();
-                        }
+                        showOverlay();
                     }
                 } else {
                     devtoolsOpen = false;
@@ -825,20 +879,16 @@
 
             // ── Debugger trap ──
             setInterval(() => {
+                if (sourceUnlocked) return;
                 const start = performance.now();
                 debugger;
                 const end = performance.now();
                 if (end - start > 100) {
-                    // Debugger was active
-                    const overlay = document.getElementById('sourceLockOverlay');
-                    if (overlay && overlay.classList.contains('hidden')) {
-                        overlay.classList.remove('hidden');
-                        document.getElementById('sourceLockInput').focus();
-                    }
+                    showOverlay();
                 }
             }, 1500);
 
-            // ── Override console to prevent logging ──
+            // ── Override console to prevent logging (but restore on unlock) ──
             const noop = () => {};
             const consoleMethods = ['log', 'warn', 'error', 'info', 'debug', 'trace', 'dir', 'dirxml', 'group', 'groupEnd',
                 'time', 'timeEnd', 'count', 'assert', 'profile', 'profileEnd'
@@ -848,30 +898,91 @@
                 originalConsole[m] = console[m];
                 console[m] = noop;
             });
-            // Store restore function
             window._restoreConsole = () => {
                 consoleMethods.forEach(m => {
                     console[m] = originalConsole[m] || noop;
                 });
             };
 
-            // ── Block screenshot via key combo ──
+            // ── Keyboard shortcut to unlock (if they know) ──
+            // We'll allow them to use the overlay only.
+        })();
+
+        // ═══════════════════════════════════════════════════════════════
+        //  0b. ANTI-SCREENSHOT & RECORDING PROTECTION
+        // ═══════════════════════════════════════════════════════════════
+        (function antiScreenshot() {
+            const uiOverlay = document.getElementById('uiOverlay');
+            const glassCard = document.getElementById('appRoot');
+            const protectionOverlay = document.getElementById('screenshotProtection');
+
+            let isProtected = false;
+
+            function protect() {
+                if (isProtected) return;
+                isProtected = true;
+                // Blur the UI
+                uiOverlay.classList.add('blurred');
+                glassCard.classList.add('blurred');
+                // Show overlay message
+                protectionOverlay.classList.add('show');
+                // Also disable pointer events on UI to prevent interaction
+                uiOverlay.style.pointerEvents = 'none';
+            }
+
+            function unprotect() {
+                if (!isProtected) return;
+                isProtected = false;
+                uiOverlay.classList.remove('blurred');
+                glassCard.classList.remove('blurred');
+                protectionOverlay.classList.remove('show');
+                uiOverlay.style.pointerEvents = '';
+            }
+
+            // ── Detect when page becomes hidden (tab switch, app switch) ──
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    protect();
+                } else {
+                    // Small delay to avoid flicker when switching back
+                    setTimeout(unprotect, 200);
+                }
+            });
+
+            // ── Detect window blur (e.g., when user opens another app to take photo) ──
+            window.addEventListener('blur', () => {
+                protect();
+            });
+            window.addEventListener('focus', () => {
+                setTimeout(unprotect, 300);
+            });
+
+            // ── Detect print attempt ──
+            window.addEventListener('beforeprint', (e) => {
+                protect();
+                // Also prevent print from happening
+                e.preventDefault();
+                // Show a message
+                alert('Printing is not allowed on this page.');
+                return false;
+            });
+
+            // ── Detect if user tries to use screenshot via keyboard (PrintScreen) ──
+            // Already handled in keydown, but we also protect
             document.addEventListener('keyup', (e) => {
                 if (e.key === 'PrintScreen' || e.key === 'PrtSc' || e.key === 'PrtScr') {
-                    e.preventDefault();
-                    return false;
+                    protect();
+                    setTimeout(unprotect, 1000);
                 }
-            }, true);
+            });
 
-            // ── Prevent copy/paste ──
-            document.addEventListener('copy', (e) => { e.preventDefault();
-                return false; }, true);
-            document.addEventListener('cut', (e) => { e.preventDefault();
-                return false; }, true);
-            document.addEventListener('paste', (e) => { e.preventDefault();
-                return false; }, true);
+            // ── Warn if user tries to use screen recording (media capture) ──
+            // Not directly detectable, but we can monitor for fullscreen changes or similar.
+            // We'll add a note.
 
-            console.log('%c🔒 This page is protected.', 'font-size:20px; color:#ff6b9d;');
+            // ── Expose a way to manually protect/unprotect (for testing) ──
+            window._protect = protect;
+            window._unprotect = unprotect;
         })();
 
         // ═══════════════════════════════════════════════════════════════
