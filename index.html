@@ -1,149 +1,254 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>Kettia private message</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover" />
+    <title>Kettia · 3D Private Message</title>
 
-    <!-- Premium Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Dancing+Script:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Dancing+Script:wght@400;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
+    </script>
 
     <style>
+        /* ── SECURITY: hide everything until source lock is bypassed ── */
+        #sourceLockOverlay {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: rgba(10, 10, 26, 0.97);
+            backdrop-filter: blur(30px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 30px;
+            font-family: 'Inter', sans-serif;
+            transition: opacity 0.5s ease;
+        }
+        #sourceLockOverlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #sourceLockOverlay .lock-box {
+            background: rgba(30, 30, 60, 0.9);
+            border: 1px solid rgba(255, 107, 157, 0.3);
+            border-radius: 32px;
+            padding: 48px 40px;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+        }
+        #sourceLockOverlay .lock-box .icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+        #sourceLockOverlay .lock-box h2 {
+            color: #fff;
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        #sourceLockOverlay .lock-box p {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+            margin-bottom: 24px;
+        }
+        #sourceLockOverlay .lock-box input {
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 107, 157, 0.3);
+            border-radius: 60px;
+            padding: 14px 20px;
+            width: 100%;
+            color: white;
+            font-size: 1rem;
+            font-family: monospace;
+            letter-spacing: 4px;
+            text-align: center;
+            margin-bottom: 16px;
+            transition: all 0.3s;
+        }
+        #sourceLockOverlay .lock-box input:focus {
+            outline: none;
+            border-color: #ff69b4;
+            box-shadow: 0 0 30px rgba(255, 105, 180, 0.25);
+        }
+        #sourceLockOverlay .lock-box .btn-unlock {
+            background: linear-gradient(135deg, #ff6b9d, #c084fc);
+            border: none;
+            border-radius: 60px;
+            padding: 14px;
+            width: 100%;
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        #sourceLockOverlay .lock-box .btn-unlock:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(255, 107, 157, 0.4);
+        }
+        #sourceLockOverlay .lock-box .error-msg {
+            color: #ff6b6b;
+            font-size: 0.8rem;
+            margin-top: 12px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #sourceLockOverlay .lock-box .error-msg.show {
+            opacity: 1;
+        }
+
+        /* ── reset & base ── */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
         }
-
         body {
             font-family: 'Inter', sans-serif;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #0a0a1a 0%, #1a0b2e 50%, #0f172a 100%);
-            overflow-x: hidden;
-            position: relative;
+            overflow: hidden;
+            background: #0a0a1a;
             color: #f0f0f5;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
         }
 
-        /* Particle Canvas */
-        #particleCanvas {
+        /* ── Anti-screenshot / selection ── */
+        ::selection {
+            background: transparent;
+            color: inherit;
+        }
+        ::-moz-selection {
+            background: transparent;
+            color: inherit;
+        }
+        img,
+        canvas,
+        video {
+            -webkit-user-drag: none;
+            user-drag: none;
+            -webkit-touch-callout: none;
+        }
+
+        /* ── Three.js canvas ── */
+        #three-canvas {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        /* Floating Elements */
-        .floating-element {
-            position: fixed;
-            pointer-events: none;
-            z-index: 2;
-            font-size: 1.4rem;
-            animation: floatUp linear forwards;
-            filter: drop-shadow(0 0 5px rgba(255,182,193,0.5));
-        }
-
-        @keyframes floatUp {
-            0% {
-                transform: translateY(100vh) rotate(0deg);
-                opacity: 0;
-            }
-            10% { opacity: 0.8; }
-            80% { opacity: 0.8; }
-            100% {
-                transform: translateY(-20vh) rotate(360deg);
-                opacity: 0;
-            }
-        }
-
-        /* Glow Orbs */
-        .glow-orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(80px);
-            pointer-events: none;
             z-index: 0;
-            animation: orbFloat 20s infinite ease-in-out;
-        }
-        .orb-1 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(255,107,157,0.4) 0%, transparent 70%); top: -100px; left: -100px; }
-        .orb-2 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(192,132,252,0.3) 0%, transparent 70%); bottom: -150px; right: -150px; animation-delay: -5s; }
-        .orb-3 { width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,215,0,0.2) 0%, transparent 70%); top: 50%; left: 50%; animation-delay: -10s; }
-
-        @keyframes orbFloat {
-            0%, 100% { transform: translate(0,0) scale(1); }
-            25% { transform: translate(40px,-40px) scale(1.1); }
-            50% { transform: translate(-30px,30px) scale(0.9); }
-            75% { transform: translate(30px,20px) scale(1.05); }
+            display: block;
+            pointer-events: none;
         }
 
-        /* Main Container */
-        .app-wrapper {
-            position: relative;
-            z-index: 20;
-            min-height: 100vh;
+        /* ── UI Overlay ── */
+        .ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
+            pointer-events: none;
+        }
+        .ui-overlay>* {
+            pointer-events: auto;
         }
 
-        /* Glass Card */
+        /* ── Glass Card ── */
         .glass-card {
-            background: rgba(20, 20, 45, 0.88);
-            backdrop-filter: blur(25px);
+            background: rgba(20, 20, 45, 0.82);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
             border-radius: 44px;
             border: 1px solid rgba(255, 200, 220, 0.35);
-            box-shadow: 0 30px 50px rgba(0,0,0,0.4), 0 0 80px rgba(255,107,157,0.15);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 100px rgba(255, 107, 157, 0.12);
             width: 100%;
             max-width: 580px;
-            transition: transform 0.2s ease-out;
+            max-height: 92vh;
+            overflow-y: auto;
+            transition: transform 0.08s ease-out;
             transform-style: preserve-3d;
-            animation: cardEntrance 0.8s cubic-bezier(0.2,0.9,0.4,1.1);
+            transform: perspective(1200px) rotateX(0deg) rotateY(0deg) translateZ(0);
+            will-change: transform;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 107, 157, 0.3) transparent;
         }
-
-        @keyframes cardEntrance {
-            from { opacity: 0; transform: translateY(50px) scale(0.96); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+        .glass-card::-webkit-scrollbar {
+            width: 4px;
+        }
+        .glass-card::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .glass-card::-webkit-scrollbar-thumb {
+            background: rgba(255, 107, 157, 0.3);
+            border-radius: 10px;
         }
 
         .card-inner {
             padding: 38px 30px;
+            position: relative;
         }
 
-        /* Live Clock */
+        /* ── Live Clock ── */
         .live-clock {
             text-align: center;
             font-family: 'Courier New', monospace;
             font-size: 0.75rem;
             letter-spacing: 3px;
-            color: rgba(255,255,255,0.5);
+            color: rgba(255, 255, 255, 0.45);
             margin-bottom: 20px;
         }
 
-        /* Password Screen */
+        /* ── Password Screen ── */
         .lock-icon {
             text-align: center;
             font-size: 4.8rem;
             margin-bottom: 20px;
             animation: heartbeat 2s ease infinite, floatIcon 3s ease infinite;
-            filter: drop-shadow(0 10px 25px rgba(255,107,157,0.5));
+            filter: drop-shadow(0 10px 25px rgba(255, 107, 157, 0.5));
         }
-
         @keyframes heartbeat {
-            0%,100% { transform: scale(1); }
-            25% { transform: scale(1.08); }
-            50% { transform: scale(1); }
-            75% { transform: scale(1.05); }
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            25% {
+                transform: scale(1.08);
+            }
+            50% {
+                transform: scale(1);
+            }
+            75% {
+                transform: scale(1.05);
+            }
         }
-
         @keyframes floatIcon {
-            0%,100% { transform: translateY(0); }
-            50% { transform: translateY(-12px); }
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-12px);
+            }
         }
 
         .title-luxury {
@@ -159,24 +264,29 @@
             animation: gradientShift 5s ease infinite;
             margin-bottom: 12px;
         }
-
         @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
         }
 
         .subtitle {
             text-align: center;
-            color: rgba(255,255,255,0.6);
+            color: rgba(255, 255, 255, 0.55);
             margin-bottom: 32px;
             font-size: 0.9rem;
             letter-spacing: 1px;
         }
 
         .password-field {
-            background: rgba(0,0,0,0.4);
-            border: 2px solid rgba(255,107,157,0.4);
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 107, 157, 0.4);
             border-radius: 60px;
             padding: 16px 24px;
             width: 100%;
@@ -188,11 +298,10 @@
             margin-bottom: 20px;
             transition: all 0.3s;
         }
-
         .password-field:focus {
             outline: none;
             border-color: #ff69b4;
-            box-shadow: 0 0 25px rgba(255,105,180,0.4);
+            box-shadow: 0 0 30px rgba(255, 105, 180, 0.35);
             transform: scale(1.01);
         }
 
@@ -208,13 +317,15 @@
             color: white;
             cursor: pointer;
             transition: all 0.3s;
-            box-shadow: 0 8px 25px rgba(255,107,157,0.4);
+            box-shadow: 0 8px 25px rgba(255, 107, 157, 0.4);
         }
-
         .btn-luxury:hover {
             transform: translateY(-2px);
             background-position: right center;
-            box-shadow: 0 12px 35px rgba(255,107,157,0.5);
+            box-shadow: 0 12px 35px rgba(255, 107, 157, 0.5);
+        }
+        .btn-luxury:active {
+            transform: scale(0.97);
         }
 
         .error-msg {
@@ -225,30 +336,34 @@
             opacity: 0;
             transition: opacity 0.2s;
         }
-
         .error-msg.show {
             opacity: 1;
             animation: shake 0.4s ease;
         }
-
         @keyframes shake {
-            0%,100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+            25% {
+                transform: translateX(-6px);
+            }
+            75% {
+                transform: translateX(6px);
+            }
         }
 
-        /* Loading Screen */
+        /* ── Loading Screen ── */
         .carousel-container {
             position: relative;
             width: 100%;
-            aspect-ratio: 1 / 1;
+            aspect-ratio: 1/1;
             border-radius: 28px;
             overflow: hidden;
             margin: 20px 0;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-            border: 2px solid rgba(255,200,220,0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 200, 220, 0.25);
         }
-
         .carousel-img {
             position: absolute;
             top: 0;
@@ -257,21 +372,19 @@
             height: 100%;
             object-fit: cover;
             opacity: 0;
-            transition: opacity 1.2s ease;
+            transition: opacity 1.4s ease;
         }
-
         .carousel-img.active {
             opacity: 1;
         }
 
-        .spinner {
+        .spinner-3d {
             width: 70px;
             height: 70px;
             margin: 20px auto;
             position: relative;
         }
-
-        .spinner::before {
+        .spinner-3d::before {
             content: '';
             position: absolute;
             width: 100%;
@@ -281,27 +394,26 @@
             animation: spin 1s linear infinite;
             mask: radial-gradient(farthest-side, transparent calc(100% - 8px), black calc(100% - 6px));
         }
-
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .progress-bar-container {
             width: 100%;
             height: 4px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.08);
             border-radius: 2px;
             margin: 20px 0;
             overflow: hidden;
         }
-
         .progress-fill {
             height: 100%;
             background: linear-gradient(90deg, #ff6b9d, #c084fc);
             width: 0%;
             transition: width 0.1s linear;
         }
-
         .countdown {
             text-align: center;
             font-family: monospace;
@@ -310,7 +422,7 @@
             font-weight: bold;
         }
 
-        /* Message Screen */
+        /* ── Message Screen ── */
         .recipient-name {
             font-family: 'Playfair Display', serif;
             font-size: 1.8rem;
@@ -321,29 +433,27 @@
             color: transparent;
             margin-bottom: 8px;
         }
-
         .message-badge {
             text-align: center;
             margin-bottom: 28px;
         }
-
         .badge {
             display: inline-block;
-            background: rgba(255,107,157,0.2);
+            background: rgba(255, 107, 157, 0.18);
             padding: 6px 18px;
             border-radius: 40px;
             font-size: 0.7rem;
-            border: 1px solid rgba(255,107,157,0.4);
+            border: 1px solid rgba(255, 107, 157, 0.35);
+            letter-spacing: 0.5px;
         }
 
         .message-content {
             font-size: 1rem;
             line-height: 1.9;
             white-space: pre-wrap;
-            min-height: 420px;
-            color: rgba(255,255,255,0.9);
+            min-height: 350px;
+            color: rgba(255, 255, 255, 0.9);
         }
-
         .typing-cursor {
             display: inline-block;
             width: 2px;
@@ -353,20 +463,23 @@
             margin-left: 2px;
             animation: blink 1s step-end infinite;
         }
-
         @keyframes blink {
-            0%,100% { opacity: 1; }
-            50% { opacity: 0; }
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0;
+            }
         }
 
-        /* Reply Section */
+        /* ── Reply Section ── */
         .reply-choice {
             margin-top: 32px;
             padding-top: 24px;
-            border-top: 1px solid rgba(255,200,220,0.2);
+            border-top: 1px solid rgba(255, 200, 220, 0.15);
             text-align: center;
         }
-
         .choice-buttons {
             display: flex;
             gap: 12px;
@@ -374,7 +487,6 @@
             margin-top: 16px;
             flex-wrap: wrap;
         }
-
         .btn-choice {
             padding: 12px 28px;
             border-radius: 50px;
@@ -382,47 +494,48 @@
             cursor: pointer;
             transition: all 0.2s;
             border: none;
+            font-size: 0.95rem;
         }
-
+        .btn-choice:active {
+            transform: scale(0.96);
+        }
         .btn-yes {
             background: linear-gradient(135deg, #ff6b9d, #c084fc);
             color: white;
         }
-
         .btn-no {
             background: transparent;
-            border: 2px solid rgba(255,255,255,0.3);
-            color: rgba(255,255,255,0.7);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            color: rgba(255, 255, 255, 0.7);
         }
 
         .reply-form {
             margin-top: 24px;
             display: none;
         }
-
         .reply-textarea {
             width: 100%;
             min-height: 120px;
-            background: rgba(0,0,0,0.3);
-            border: 2px solid rgba(255,107,157,0.3);
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 107, 157, 0.3);
             border-radius: 20px;
             padding: 16px;
             color: white;
             font-size: 0.95rem;
             resize: vertical;
             margin-bottom: 16px;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.3s;
         }
-
         .reply-textarea:focus {
             outline: none;
             border-color: #ff6b9d;
         }
-
         .reply-actions {
             display: flex;
             gap: 12px;
+            flex-wrap: wrap;
         }
-
         .btn-send {
             flex: 1;
             background: linear-gradient(135deg, #ff6b9d, #c084fc);
@@ -432,62 +545,62 @@
             color: white;
             font-weight: 600;
             cursor: pointer;
+            transition: all 0.2s;
+            min-width: 120px;
         }
-
+        .btn-send:active {
+            transform: scale(0.96);
+        }
+        .btn-send:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
         .btn-cancel {
             padding: 12px 24px;
             background: transparent;
-            border: 2px solid rgba(255,255,255,0.3);
+            border: 2px solid rgba(255, 255, 255, 0.25);
             border-radius: 50px;
-            color: rgba(255,255,255,0.7);
+            color: rgba(255, 255, 255, 0.7);
             cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-cancel:active {
+            transform: scale(0.96);
         }
 
-        .success-message, .silent-ending {
+        .success-message,
+        .silent-ending {
             display: none;
             text-align: center;
             padding: 40px 20px;
         }
-
-        .success-icon { font-size: 4rem; margin-bottom: 16px; }
-        .success-title { font-size: 1.3rem; color: #86efac; margin-bottom: 8px; }
-        .silent-icon { font-size: 3rem; margin-bottom: 16px; }
-
-        /* Candle */
-        .candle-container {
-            position: fixed;
-            bottom: 25px;
-            left: 25px;
-            z-index: 100;
-            text-align: center;
-            cursor: pointer;
-            background: rgba(0,0,0,0.4);
-            backdrop-filter: blur(8px);
-            padding: 8px 12px;
-            border-radius: 50px;
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+        .success-title {
+            font-size: 1.3rem;
+            color: #86efac;
+            margin-bottom: 8px;
+        }
+        .silent-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+        .silent-text {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.8;
         }
 
-        .candle {
-            font-size: 2rem;
-            filter: drop-shadow(0 0 15px #ffaa66);
-            animation: flicker 2s infinite;
-        }
-
-        @keyframes flicker {
-            0%,100% { filter: drop-shadow(0 0 10px #ffaa66); }
-            50% { filter: drop-shadow(0 0 20px #ff8844); }
-        }
-
-        /* Footer */
+        /* ── Footer ── */
         .dev-footer {
             margin-top: 32px;
             text-align: center;
             font-size: 0.7rem;
-            color: rgba(255,220,240,0.5);
-            border-top: 1px solid rgba(255,200,220,0.15);
+            color: rgba(255, 220, 240, 0.4);
+            border-top: 1px solid rgba(255, 200, 220, 0.1);
             padding-top: 20px;
         }
-
         .dev-footer a {
             background: linear-gradient(90deg, #ffadd2, #c084fc);
             -webkit-background-clip: text;
@@ -495,391 +608,765 @@
             color: transparent;
             text-decoration: none;
             font-weight: 600;
+            transition: all 0.3s;
+        }
+        .dev-footer a:hover {
+            filter: brightness(1.3);
         }
 
+        /* ── Responsive ── */
         @media (max-width: 550px) {
-            .card-inner { padding: 28px 20px; }
-            .title-luxury { font-size: 1.8rem; }
-            .recipient-name { font-size: 1.5rem; }
-            .message-content { font-size: 0.9rem; line-height: 1.7; }
-            .choice-buttons { flex-direction: column; }
-            .btn-choice { width: 100%; }
+            .card-inner {
+                padding: 28px 18px;
+            }
+            .title-luxury {
+                font-size: 1.8rem;
+            }
+            .recipient-name {
+                font-size: 1.5rem;
+            }
+            .message-content {
+                font-size: 0.9rem;
+                line-height: 1.7;
+            }
+            .choice-buttons {
+                flex-direction: column;
+            }
+            .btn-choice {
+                width: 100%;
+            }
+            .glass-card {
+                max-height: 94vh;
+                border-radius: 32px;
+            }
+            #sourceLockOverlay .lock-box {
+                padding: 32px 24px;
+            }
+        }
+        @media (max-width: 400px) {
+            .card-inner {
+                padding: 20px 14px;
+            }
+            .title-luxury {
+                font-size: 1.5rem;
+            }
+            .lock-icon {
+                font-size: 3.8rem;
+            }
         }
     </style>
 </head>
 <body>
 
-<div class="glow-orb orb-1"></div>
-<div class="glow-orb orb-2"></div>
-<div class="glow-orb orb-3"></div>
-<canvas id="particleCanvas"></canvas>
-
-<div class="app-wrapper">
-    <div class="glass-card" id="appRoot">
-        <div id="dynamicContent"></div>
+    <!-- ─── SOURCE CODE LOCK (PASSCODE: 2006) ─── -->
+    <div id="sourceLockOverlay">
+        <div class="lock-box">
+            <div class="icon">🔐</div>
+            <h2>Source Code Protected</h2>
+            <p>Enter the passcode to view this page's source</p>
+            <input type="password" id="sourceLockInput" placeholder="Enter passcode" autocomplete="off" maxlength="10" />
+            <button class="btn-unlock" id="sourceUnlockBtn">Unlock 🔓</button>
+            <div id="sourceLockError" class="error-msg">❌ Incorrect passcode. Try again.</div>
+        </div>
     </div>
-</div>
 
-<div class="candle-container" id="candleToggle">
-    <div class="candle">🕯️</div>
-    <div style="font-size: 0.6rem;">light</div>
-</div>
+    <!-- ─── THREE.JS CANVAS ─── -->
+    <canvas id="three-canvas"></canvas>
 
-<script>
-    // ========== CONFIGURATION ==========
-    const PASSWORD = "kabar@2026";
-    const RECIPIENT_NAME = "Kettia";
-    
-    // YOUR LATEST GOOGLE APPS SCRIPT URL
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyyVpRYo-TXUrLzzq9dr1QRVkqF9s4J5KSOKwBRm41KD-6GSkQ7W7eoYnRFFBj1F7U4/exec";
-    
-    // ========== BEAUTIFUL, LOVABLE IMAGES FOR MOMENTS ==========
-    // These images represent love, connection, sunset, togetherness, and beautiful memories
-    const IMAGES = [
-        "https://images.pexels.com/photos/2064331/pexels-photo-2064331.jpeg?auto=compress&cs=tinysrgb&w=800",
-        "https://images.pexels.com/photos/1556691/pexels-photo-1556691.jpeg?auto=compress&cs=tinysrgb&w=800",
-        "https://images.pexels.com/photos/2380794/pexels-photo-2380794.jpeg?auto=compress&cs=tinysrgb&w=800",
-        "https://images.pexels.com/photos/1468379/pexels-photo-1468379.jpeg?auto=compress&cs=tinysrgb&w=800",
-        "https://images.pexels.com/photos/2690323/pexels-photo-2690323.jpeg?auto=compress&cs=tinysrgb&w=800",
-        "https://images.pexels.com/photos/210922/pexels-photo-210922.jpeg?auto=compress&cs=tinysrgb&w=800",
-        "https://images.pexels.com/photos/1024967/pexels-photo-1024967.jpeg?auto=compress&cs=tinysrgb&w=800",
-        "https://images.pexels.com/photos/1686931/pexels-photo-1686931.jpeg?auto=compress&cs=tinysrgb&w=800"
-    ];
-    
-    const MESSAGE_TEXT = `Hello Kettia,
+    <!-- ─── UI OVERLAY ─── -->
+    <div class="ui-overlay">
+        <div class="glass-card" id="appRoot">
+            <div id="dynamicContent"></div>
+        </div>
+    </div>
 
-I hope you're doing okay.
+    <script>
+        // ═══════════════════════════════════════════════════════════════
+        //  0. SECURITY: SOURCE CODE LOCK (passcode: 2006)
+        // ═══════════════════════════════════════════════════════════════
+        (function sourceLock() {
+            const SOURCE_PASS = "2006";
+            const overlay = document.getElementById('sourceLockOverlay');
+            const input = document.getElementById('sourceLockInput');
+            const btn = document.getElementById('sourceUnlockBtn');
+            const error = document.getElementById('sourceLockError');
 
-I made this little website because I wanted to talk to you in a real and honest way — to tell you something deeper than just normal messages.
-
-What we had really meant a lot to me. I still think about the time we spent together — our visits, our chats, the jokes, the way we laughed, and even the small moments of closeness we shared.
-
-With you, I didn't have to pretend. I could just be myself, and that felt rare and special.
-
-I know I didn't always show how much those moments meant to me, but the truth is… they meant more than I ever said.
-
-But as time went on, things changed. We didn't talk like we used to anymore. The connection between us started to feel weaker and more distant.
-
-I kept hoping it was just temporary, that things would go back to how they were before, but they didn't. And little by little, it started to hurt me.
-
-I've taken time to really think about us, deeply and honestly. And I've come to accept something difficult… what we had is slowly fading.
-
-Holding on like this, when things are no longer the same between us, is starting to hurt more than it brings peace. And I don't think it's fair for either of us to keep going like this.
-
-You deserve someone who is truly there for you every day — someone present, someone who gives you real time, real attention, and real love. Not something that only lives in memories or comes and goes through messages.
-
-I'm not angry at you, not at all. And I don't regret what we shared — those moments were real, and they will always matter to me. But I believe the best thing we can do now is to let each other go, and give ourselves the chance to find happiness again, even if that means walking separate paths.
-
-I truly wish you the best in everything. You deserve happiness, peace, and something real.
-
-Take care of yourself, Kettia. Maybe one day, we'll meet again and smile about what we once had.
-
-With respect and care,
-Chris`;
-    
-    // ========== GLOBAL STATE ==========
-    let currentScreen = "password";
-    let carouselInterval = null;
-    let countdownInterval = null;
-    let activeImgIndex = 0;
-    let candleLit = false;
-    
-    const containerEl = document.getElementById("dynamicContent");
-    
-    // ========== PARTICLE SYSTEM ==========
-    const canvas = document.getElementById('particleCanvas');
-    const ctx = canvas.getContext('2d');
-    let particles = [];
-    
-    function resizeCanvas() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-    
-    class Particle {
-        constructor() {
-            this.x = Math.random() * canvas.width;
-            this.y = Math.random() * canvas.height;
-            this.size = Math.random() * 2.5 + 0.8;
-            this.speedX = (Math.random() - 0.5) * 0.3;
-            this.speedY = (Math.random() - 0.5) * 0.3;
-            this.color = `hsl(${Math.random() * 60 + 300}, 70%, 65%)`;
-        }
-        update() {
-            this.x += this.speedX;
-            this.y += this.speedY;
-            if (this.x < 0) this.x = canvas.width;
-            if (this.x > canvas.width) this.x = 0;
-            if (this.y < 0) this.y = canvas.height;
-            if (this.y > canvas.height) this.y = 0;
-        }
-        draw() {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-            ctx.fillStyle = this.color;
-            ctx.fill();
-        }
-    }
-    
-    for (let i = 0; i < 70; i++) particles.push(new Particle());
-    
-    function animateParticles() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        particles.forEach(p => {
-            p.update();
-            p.draw();
-        });
-        requestAnimationFrame(animateParticles);
-    }
-    animateParticles();
-    
-    // ========== FLOATING ELEMENTS ==========
-    const floatEmojis = ['🌸', '💖', '🌹', '✨', '💕', '🦋', '💗', '🌺', '💝', '⭐', '🌙', '💫'];
-    setInterval(() => {
-        const el = document.createElement('div');
-        el.className = 'floating-element';
-        el.textContent = floatEmojis[Math.floor(Math.random() * floatEmojis.length)];
-        el.style.left = Math.random() * 100 + '%';
-        el.style.animationDuration = (8 + Math.random() * 6) + 's';
-        el.style.fontSize = (1 + Math.random() * 1.2) + 'rem';
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), 14000);
-    }, 1000);
-    
-    // ========== CANDLE ==========
-    document.getElementById('candleToggle').addEventListener('click', () => {
-        candleLit = !candleLit;
-        const candleEl = document.querySelector('.candle');
-        if (candleLit) {
-            candleEl.textContent = '🔥';
-            candleEl.style.filter = 'drop-shadow(0 0 30px #ff6600)';
-        } else {
-            candleEl.textContent = '🕯️';
-            candleEl.style.filter = 'drop-shadow(0 0 15px #ffaa66)';
-        }
-    });
-    
-    // ========== RENDER FUNCTIONS ==========
-    function renderDevFooter() {
-        return `<div class="dev-footer">✨ Developed by <a href="https://stomcodev.github.io/TUYISENGE-Jean-Chrisostom/" target="_blank">TUYISENGE Jean Chrisostom</a> ✨</div>`;
-    }
-    
-    function updateClock() {
-        const clock = document.getElementById('liveClock');
-        if (clock) {
-            clock.textContent = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        }
-    }
-    
-    // Password Screen
-    function renderPasswordScreen() {
-        containerEl.innerHTML = `
-            <div class="card-inner">
-                <div class="live-clock" id="liveClock"></div>
-                <div class="lock-icon">🔐💖</div>
-                <h1 class="title-luxury">Private message</h1>
-                <p class="subtitle">Enter your private message password</p>
-                <input type="password" id="passwordInput" class="password-field" placeholder="Enter Password" autocomplete="off">
-                <button id="unlockBtn" class="btn-luxury">Open</button>
-                <div id="errorMsg" class="error-msg">Wrong password. Try again.</div>
-                ${renderDevFooter()}
-            </div>
-        `;
-        setInterval(updateClock, 1000);
-        updateClock();
-        
-        const input = document.getElementById('passwordInput');
-        const btn = document.getElementById('unlockBtn');
-        const error = document.getElementById('errorMsg');
-        
-        const verify = () => {
-            if (input.value.trim() === PASSWORD) {
-                btn.textContent = 'Opening... 🔓';
-                setTimeout(() => {
-                    currentScreen = 'loading';
-                    render();
-                    startLoadingSequence();
-                }, 500);
-            } else {
-                error.classList.add('show');
-                input.value = '';
-                setTimeout(() => error.classList.remove('show'), 2000);
-                input.focus();
+            // Check sessionStorage for bypass
+            if (sessionStorage.getItem('sourceUnlocked') === 'true') {
+                overlay.classList.add('hidden');
+                return;
             }
-        };
-        
-        btn.onclick = verify;
-        input.onkeypress = (e) => { if (e.key === 'Enter') verify(); };
-        input.focus();
-    }
-    
-    // Loading Sequence
-    function startLoadingSequence() {
-        let secondsLeft = 8;
-        const countdownEl = document.getElementById('countdownNum');
-        const progressEl = document.getElementById('progressFill');
-        
-        const imgs = document.querySelectorAll('.carousel-img');
-        if (imgs.length) {
-            imgs[0].classList.add('active');
-            carouselInterval = setInterval(() => {
-                imgs[activeImgIndex].classList.remove('active');
-                activeImgIndex = (activeImgIndex + 1) % imgs.length;
-                imgs[activeImgIndex].classList.add('active');
-            }, 2000);
-        }
-        
-        countdownInterval = setInterval(() => {
-            secondsLeft--;
-            if (countdownEl) countdownEl.innerText = secondsLeft;
-            if (progressEl) progressEl.style.width = ((8 - secondsLeft) / 8 * 100) + '%';
-            
-            if (secondsLeft <= 0) {
-                clearInterval(carouselInterval);
-                clearInterval(countdownInterval);
-                currentScreen = 'message';
-                render();
-                startTypingAnimation();
+
+            function unlock() {
+                if (input.value.trim() === SOURCE_PASS) {
+                    sessionStorage.setItem('sourceUnlocked', 'true');
+                    overlay.classList.add('hidden');
+                    // Re-init console after unlock
+                    if (window._restoreConsole) window._restoreConsole();
+                    return true;
+                } else {
+                    error.classList.add('show');
+                    input.value = '';
+                    setTimeout(() => error.classList.remove('show'), 2500);
+                    input.focus();
+                    return false;
+                }
             }
-        }, 1000);
-    }
-    
-    function renderLoadingScreen() {
-        containerEl.innerHTML = `
-            <div class="card-inner">
-                <div style="text-align:center; margin-bottom:16px;">
-                    <span style="font-family: 'Playfair Display'; font-size:1.3rem;">✨ Our Beautiful Moments ✨</span>
-                </div>
-                <div class="carousel-container">
-                    ${IMAGES.map(src => `<img class="carousel-img" src="${src}" loading="eager">`).join('')}
-                </div>
-                <div class="spinner"></div>
-                <div class="progress-bar-container"><div class="progress-fill" id="progressFill"></div></div>
-                <div class="countdown"><span id="countdownNum">8</span> seconds</div>
-                ${renderDevFooter()}
-            </div>
-        `;
-    }
-    
-    // Typing Animation
-    function startTypingAnimation() {
-        const msgEl = document.getElementById('messageText');
-        if (!msgEl) return;
-        let i = 0;
-        function type() {
-            if (i < MESSAGE_TEXT.length) {
-                msgEl.innerHTML = MESSAGE_TEXT.substring(0, i + 1) + '<span class="typing-cursor"></span>';
-                i++;
-                setTimeout(type, 25);
-            } else {
-                msgEl.innerHTML = MESSAGE_TEXT;
-                document.getElementById('replyChoice').style.display = 'block';
-            }
-        }
-        type();
-    }
-    
-    // ========== GOOGLE SHEETS SUBMIT ==========
-    window.submitReply = async function() {
-        const textarea = document.getElementById('replyText');
-        const replyText = textarea.value.trim();
-        
-        if (!replyText) {
-            textarea.style.borderColor = '#ef4444';
-            setTimeout(() => textarea.style.borderColor = '', 1000);
-            return;
-        }
-        
-        const sendBtn = document.getElementById('sendBtn');
-        sendBtn.textContent = 'Sending... 💌';
-        sendBtn.disabled = true;
-        
-        try {
-            await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    recipient: 'Kettia',
-                    reply: replyText,
-                    timestamp: new Date().toISOString()
-                })
+
+            btn.onclick = unlock;
+            input.onkeypress = (e) => { if (e.key === 'Enter') unlock(); };
+            input.focus();
+
+            // Prevent closing overlay via ESC
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !overlay.classList.contains('hidden')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
             });
-        } catch (err) {
-            console.log('Network issue, saved locally');
+
+            // Store unlock function globally for dev tools detection
+            window._unlockSource = unlock;
+        })();
+
+        // ═══════════════════════════════════════════════════════════════
+        //  0b. SECURITY: ANTI-DEBUG, ANTI-DEVTOOLS, KEYBOARD BLOCK
+        // ═══════════════════════════════════════════════════════════════
+        (function security() {
+            // ── Block keyboard shortcuts ──
+            const blockKeys = [
+                'F12',
+                'F11',
+                'F10',
+                'F9',
+                'F8',
+                'F7',
+                'F6',
+                'F5',
+                'F4',
+                'F3',
+                'F2',
+                'F1'
+            ];
+            document.addEventListener('keydown', (e) => {
+                // F12, Ctrl+Shift+I, Ctrl+U, Ctrl+Shift+C, Ctrl+Shift+J
+                if (e.key === 'F12' ||
+                    (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key.toUpperCase())) ||
+                    (e.ctrlKey && e.key === 'u') ||
+                    (e.ctrlKey && e.shiftKey && e.key === 'U') ||
+                    (e.ctrlKey && e.key === 'U') ||
+                    (e.metaKey && e.altKey && e.key === 'I') ||
+                    (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Show lock overlay if not already shown
+                    const overlay = document.getElementById('sourceLockOverlay');
+                    if (overlay && overlay.classList.contains('hidden')) {
+                        overlay.classList.remove('hidden');
+                        document.getElementById('sourceLockInput').focus();
+                    }
+                    return false;
+                }
+                // Block PrintScreen
+                if (e.key === 'PrintScreen' || e.key === 'PrtSc' || e.key === 'PrtScr') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+                // Block Ctrl+S, Ctrl+P
+                if ((e.ctrlKey || e.metaKey) && ['s', 'p'].includes(e.key.toLowerCase())) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+            }, true);
+
+            // ── Block right-click ──
+            document.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Show lock overlay
+                const overlay = document.getElementById('sourceLockOverlay');
+                if (overlay && overlay.classList.contains('hidden')) {
+                    overlay.classList.remove('hidden');
+                    document.getElementById('sourceLockInput').focus();
+                }
+                return false;
+            }, true);
+
+            // ── Block drag & drop of images ──
+            document.addEventListener('dragstart', (e) => {
+                if (e.target.tagName === 'IMG') {
+                    e.preventDefault();
+                    return false;
+                }
+            }, true);
+
+            // ── DevTools detection ──
+            let devtoolsOpen = false;
+            const checkDevTools = () => {
+                const threshold = 160;
+                const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+                const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+                if (widthThreshold || heightThreshold) {
+                    if (!devtoolsOpen) {
+                        devtoolsOpen = true;
+                        const overlay = document.getElementById('sourceLockOverlay');
+                        if (overlay && overlay.classList.contains('hidden')) {
+                            overlay.classList.remove('hidden');
+                            document.getElementById('sourceLockInput').focus();
+                        }
+                    }
+                } else {
+                    devtoolsOpen = false;
+                }
+            };
+            setInterval(checkDevTools, 800);
+
+            // ── Debugger trap ──
+            setInterval(() => {
+                const start = performance.now();
+                debugger;
+                const end = performance.now();
+                if (end - start > 100) {
+                    // Debugger was active
+                    const overlay = document.getElementById('sourceLockOverlay');
+                    if (overlay && overlay.classList.contains('hidden')) {
+                        overlay.classList.remove('hidden');
+                        document.getElementById('sourceLockInput').focus();
+                    }
+                }
+            }, 1500);
+
+            // ── Override console to prevent logging ──
+            const noop = () => {};
+            const consoleMethods = ['log', 'warn', 'error', 'info', 'debug', 'trace', 'dir', 'dirxml', 'group', 'groupEnd',
+                'time', 'timeEnd', 'count', 'assert', 'profile', 'profileEnd'
+            ];
+            const originalConsole = {};
+            consoleMethods.forEach(m => {
+                originalConsole[m] = console[m];
+                console[m] = noop;
+            });
+            // Store restore function
+            window._restoreConsole = () => {
+                consoleMethods.forEach(m => {
+                    console[m] = originalConsole[m] || noop;
+                });
+            };
+
+            // ── Block screenshot via key combo ──
+            document.addEventListener('keyup', (e) => {
+                if (e.key === 'PrintScreen' || e.key === 'PrtSc' || e.key === 'PrtScr') {
+                    e.preventDefault();
+                    return false;
+                }
+            }, true);
+
+            // ── Prevent copy/paste ──
+            document.addEventListener('copy', (e) => { e.preventDefault();
+                return false; }, true);
+            document.addEventListener('cut', (e) => { e.preventDefault();
+                return false; }, true);
+            document.addEventListener('paste', (e) => { e.preventDefault();
+                return false; }, true);
+
+            console.log('%c🔒 This page is protected.', 'font-size:20px; color:#ff6b9d;');
+        })();
+
+        // ═══════════════════════════════════════════════════════════════
+        //  1. CONFIG
+        // ═══════════════════════════════════════════════════════════════
+        const PASSWORD = "kabar@2026";
+        const RECIPIENT_NAME = "Kettia";
+        const GOOGLE_SCRIPT_URL =
+            "https://script.google.com/macros/s/AKfycbyyVpRYo-TXUrLzzq9dr1QRVkqF9s4J5KSOKwBRm41KD-6GSkQ7W7eoYnRFFBj1F7U4/exec";
+
+        // ── Your beautiful moments images (postimg) ──
+        const IMAGES = [
+            "https://i.postimg.cc/1RVyd1kY/att-RL2ej-Tp8w-HBFf-If4Db-U-Zn5T8-eu-CK8p-Eycc-RE9j7w-Q.jpg",
+            "https://i.postimg.cc/5y8d2bJk/Messenger-creation-441722c3-2cda-4105-998a-7138d70f3125.jpg",
+            "https://i.postimg.cc/htcghzfs/att-Kdm5t-C-m12XUQ-j-SFJd-VJ0Jj-Tyy-Mna-J5Awbt1Lxy-D4c.jpg",
+            "https://i.postimg.cc/Y95B7j5v/att-p-H0O-Gzuswv-Bx8hx-Ns-Wd3P5IRWbdj-Td4-lr-IVz9A-I.jpg"
+        ];
+
+        const MESSAGE_TEXT = `Hello Kettia,
+
+        I hope you're doing okay.
+
+        I made this little website because I wanted to talk to you in a real and honest way — to tell you something deeper than just normal messages.
+
+        What we had really meant a lot to me. I still think about the time we spent together — our visits, our chats, the jokes, the way we laughed, and even the small moments of closeness we shared.
+
+        With you, I didn't have to pretend. I could just be myself, and that felt rare and special.
+
+        I know I didn't always show how much those moments meant to me, but the truth is… they meant more than I ever said.
+
+        But as time went on, things changed. We didn't talk like we used to anymore. The connection between us started to feel weaker and more distant.
+
+        I kept hoping it was just temporary, that things would go back to how they were before, but they didn't. And little by little, it started to hurt me.
+
+        I've taken time to really think about us, deeply and honestly. And I've come to accept something difficult… what we had is slowly fading.
+
+        Holding on like this, when things are no longer the same between us, is starting to hurt more than it brings peace. And I don't think it's fair for either of us to keep going like this.
+
+        You deserve someone who is truly there for you every day — someone present, someone who gives you real time, real attention, and real love. Not something that only lives in memories or comes and goes through messages.
+
+        I'm not angry at you, not at all. And I don't regret what we shared — those moments were real, and they will always matter to me. But I believe the best thing we can do now is to let each other go, and give ourselves the chance to find happiness again, even if that means walking separate paths.
+
+        I truly wish you the best in everything. You deserve happiness, peace, and something real.
+
+        Take care of yourself, Kettia. Maybe one day, we'll meet again and smile about what we once had.
+
+        With respect and care,
+        Chris`;
+
+        // ═══════════════════════════════════════════════════════════════
+        //  2. THREE.JS — 3D SCENE
+        // ═══════════════════════════════════════════════════════════════
+        const canvasEl = document.getElementById('three-canvas');
+        const renderer = new THREE.WebGLRenderer({ canvas: canvasEl, alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a1a);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 8);
+
+        // ── Lights ──
+        const ambientLight = new THREE.AmbientLight(0x333366, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xff99cc, 1.8);
+        dirLight.position.set(2, 4, 6);
+        scene.add(dirLight);
+
+        const backLight = new THREE.DirectionalLight(0x6666ff, 0.8);
+        backLight.position.set(-2, -1, -4);
+        scene.add(backLight);
+
+        const pointLight = new THREE.PointLight(0xff6b9d, 0.5, 10);
+        pointLight.position.set(-1, 2, 3);
+        scene.add(pointLight);
+
+        // ── Glow Orbs ──
+        function createOrb(color, size, pos, delay = 0) {
+            const geo = new THREE.SphereGeometry(size, 32, 32);
+            const mat = new THREE.MeshBasicMaterial({
+                color: color,
+                transparent: true,
+                opacity: 0.15,
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(pos.x, pos.y, pos.z);
+            mesh.userData = { delay };
+            scene.add(mesh);
+            return mesh;
         }
-        
-        document.getElementById('replyForm').style.display = 'none';
-        document.getElementById('successMessage').style.display = 'block';
-    };
-    
-    window.showReplyForm = function() {
-        document.getElementById('replyChoice').style.display = 'none';
-        document.getElementById('replyForm').style.display = 'block';
-        document.getElementById('replyText').focus();
-    };
-    
-    window.showSilentEnding = function() {
-        document.getElementById('replyChoice').style.display = 'none';
-        document.getElementById('silentEnding').style.display = 'block';
-    };
-    
-    // Message Screen
-    function renderMessageScreen() {
-        containerEl.innerHTML = `
+        const orbs = [
+            createOrb(0xff6b9d, 2.2, { x: -2.5, y: 1.5, z: -3 }, 0),
+            createOrb(0xc084fc, 2.8, { x: 2.8, y: -1.8, z: -4 }, 1.5),
+            createOrb(0xffd700, 1.8, { x: 0, y: 2.8, z: -5 }, 3),
+        ];
+
+        // ── Stars ──
+        const starCount = 1800;
+        const starGeo = new THREE.BufferGeometry();
+        const starPos = new Float32Array(starCount * 3);
+        const starSizes = new Float32Array(starCount);
+        const starColors = new Float32Array(starCount * 3);
+        for (let i = 0; i < starCount; i++) {
+            const r = 5 + Math.random() * 25;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            starPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+            starPos[i * 3 + 1] = r * Math.cos(phi);
+            starPos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta) - 5;
+            starSizes[i] = 0.04 + Math.random() * 0.1;
+            const c = new THREE.Color().setHSL(0.75 + Math.random() * 0.2, 0.6, 0.6 + Math.random() * 0.4);
+            starColors[i * 3] = c.r;
+            starColors[i * 3 + 1] = c.g;
+            starColors[i * 3 + 2] = c.b;
+        }
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        starGeo.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
+        starGeo.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+
+        const starMat = new THREE.PointsMaterial({
+            size: 0.06,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.9,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            sizeAttenuation: true,
+        });
+        const stars = new THREE.Points(starGeo, starMat);
+        scene.add(stars);
+
+        // ── Floating Hearts ──
+        const heartTexture = (() => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            const cx = 32,
+                cy = 32;
+            const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 32);
+            g.addColorStop(0, 'rgba(255,107,157,0.9)');
+            g.addColorStop(0.5, 'rgba(255,69,180,0.6)');
+            g.addColorStop(1, 'rgba(255,69,180,0)');
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, 64, 64);
+            ctx.font = '34px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = 'rgba(255,255,255,0.95)';
+            ctx.shadowColor = 'rgba(255,107,157,0.8)';
+            ctx.shadowBlur = 10;
+            ctx.fillText('❤️', cx, cy + 1);
+            return new THREE.CanvasTexture(canvas);
+        })();
+
+        const hearts = [];
+        for (let i = 0; i < 28; i++) {
+            const mat = new THREE.SpriteMaterial({
+                map: heartTexture,
+                transparent: true,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                opacity: 0.5 + Math.random() * 0.4,
+            });
+            const sprite = new THREE.Sprite(mat);
+            const radius = 1.5 + Math.random() * 3.5;
+            const angle = Math.random() * Math.PI * 2;
+            const height = (Math.random() - 0.5) * 4;
+            sprite.position.set(
+                Math.cos(angle) * radius,
+                height,
+                Math.sin(angle) * radius - 1
+            );
+            sprite.scale.set(0.3 + Math.random() * 0.4, 0.3 + Math.random() * 0.4, 1);
+            sprite.userData = {
+                angle: angle,
+                radius: radius,
+                speed: 0.002 + Math.random() * 0.005,
+                heightOffset: (Math.random() - 0.5) * 0.8,
+                phase: Math.random() * Math.PI * 2,
+                floatSpeed: 0.3 + Math.random() * 0.4,
+            };
+            scene.add(sprite);
+            hearts.push(sprite);
+        }
+
+        // ── Mouse tracking ──
+        let mouseX = 0,
+            mouseY = 0;
+        let targetRotX = 0,
+            targetRotY = 0;
+        let currentRotX = 0,
+            currentRotY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+        document.addEventListener('touchmove', (e) => {
+            const t = e.touches[0];
+            mouseX = (t.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(t.clientY / window.innerHeight) * 2 + 1;
+        }, { passive: true });
+
+        window.addEventListener('resize', () => {
+            const w = window.innerWidth,
+                h = window.innerHeight;
+            renderer.setSize(w, h);
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        //  3. UI STATE & RENDER
+        // ═══════════════════════════════════════════════════════════════
+        let currentScreen = "password";
+        let carouselInterval = null;
+        let countdownInterval = null;
+        let activeImgIndex = 0;
+        const containerEl = document.getElementById('dynamicContent');
+        const cardEl = document.getElementById('appRoot');
+
+        function updateClock() {
+            const el = document.getElementById('liveClock');
+            if (el) {
+                el.textContent = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit',
+                    second: '2-digit' });
+            }
+        }
+
+        function renderDevFooter() {
+            return `<div class="dev-footer">✨ Developed by <a href="https://chrisostom.vercel.app" target="_blank">TUYISENGE Jean Chrisostom</a> ✨</div>`;
+        }
+
+        // ── Password Screen ──
+        function renderPasswordScreen() {
+            containerEl.innerHTML = `
             <div class="card-inner">
-                <div class="recipient-name">For ${RECIPIENT_NAME}</div>
-                <div class="message-badge"><span class="badge">💌 Private message from Chris 💌</span></div>
-                <div id="messageText" class="message-content"></div>
-                
-                <div id="replyChoice" class="reply-choice" style="display: none;">
-                    <p>Would you like to send a reply?</p>
-                    <div class="choice-buttons">
-                        <button class="btn-choice btn-yes" onclick="window.showReplyForm()">Yes, I want to reply 💬</button>
-                        <button class="btn-choice btn-no" onclick="window.showSilentEnding()">No, just read ✨</button>
-                    </div>
-                </div>
-                
-                <div id="replyForm" class="reply-form">
-                    <textarea id="replyText" class="reply-textarea" placeholder="Write your thoughts here..."></textarea>
-                    <div class="reply-actions">
-                        <button id="sendBtn" class="btn-send" onclick="window.submitReply()">Send Reply 💌</button>
-                        <button class="btn-cancel" onclick="document.getElementById('replyForm').style.display='none'; document.getElementById('replyChoice').style.display='block';">Cancel</button>
-                    </div>
-                </div>
-                
-                <div id="successMessage" class="success-message">
-                    <div class="success-icon">❤️✨❤️</div>
-                    <div class="success-title">Message Sent!</div>
-                    <div class="success-text">Thank you for your reply. It means a lot.</div>
-                </div>
-                
-                <div id="silentEnding" class="silent-ending">
-                    <div class="silent-icon">🌙💫</div>
-                    <div class="silent-text">"Sometimes the most beautiful goodbyes are the ones we hold quietly in our hearts."<br><br>Take care, Kettia. 💕</div>
-                </div>
-                
-                ${renderDevFooter()}
+              <div class="live-clock" id="liveClock"></div>
+              <div class="lock-icon">🔐💖</div>
+              <h1 class="title-luxury">Private message</h1>
+              <p class="subtitle">Enter your private message password</p>
+              <input type="password" id="passwordInput" class="password-field" placeholder="Enter Password" autocomplete="off">
+              <button id="unlockBtn" class="btn-luxury">Open</button>
+              <div id="errorMsg" class="error-msg">Wrong password. Try again.</div>
+              ${renderDevFooter()}
             </div>
-        `;
-    }
-    
-    function render() {
-        if (currentScreen === 'password') renderPasswordScreen();
-        else if (currentScreen === 'loading') renderLoadingScreen();
-        else if (currentScreen === 'message') renderMessageScreen();
-    }
-    
-    // Start
-    render();
-    
-    // Cleanup
-    window.addEventListener('beforeunload', () => {
-        if (carouselInterval) clearInterval(carouselInterval);
-        if (countdownInterval) clearInterval(countdownInterval);
-    });
-</script>
+          `;
+            setInterval(updateClock, 1000);
+            updateClock();
+
+            const input = document.getElementById('passwordInput');
+            const btn = document.getElementById('unlockBtn');
+            const error = document.getElementById('errorMsg');
+
+            const verify = () => {
+                if (input.value.trim() === PASSWORD) {
+                    btn.textContent = 'Opening… 🔓';
+                    btn.disabled = true;
+                    setTimeout(() => {
+                        currentScreen = 'loading';
+                        render();
+                        startLoadingSequence();
+                    }, 500);
+                } else {
+                    error.classList.add('show');
+                    input.value = '';
+                    setTimeout(() => error.classList.remove('show'), 2000);
+                    input.focus();
+                }
+            };
+
+            btn.onclick = verify;
+            input.onkeypress = (e) => { if (e.key === 'Enter') verify(); };
+            setTimeout(() => input.focus(), 300);
+        }
+
+        // ── Loading Screen ──
+        function startLoadingSequence() {
+            let secondsLeft = 8;
+            const countdownEl = document.getElementById('countdownNum');
+            const progressEl = document.getElementById('progressFill');
+            const imgs = document.querySelectorAll('.carousel-img');
+
+            if (imgs.length) {
+                imgs[0].classList.add('active');
+                carouselInterval = setInterval(() => {
+                    imgs[activeImgIndex].classList.remove('active');
+                    activeImgIndex = (activeImgIndex + 1) % imgs.length;
+                    imgs[activeImgIndex].classList.add('active');
+                }, 2000);
+            }
+
+            countdownInterval = setInterval(() => {
+                secondsLeft--;
+                if (countdownEl) countdownEl.innerText = secondsLeft;
+                if (progressEl) progressEl.style.width = ((8 - secondsLeft) / 8 * 100) + '%';
+
+                if (secondsLeft <= 0) {
+                    clearInterval(carouselInterval);
+                    clearInterval(countdownInterval);
+                    currentScreen = 'message';
+                    render();
+                    startTypingAnimation();
+                }
+            }, 1000);
+        }
+
+        function renderLoadingScreen() {
+            containerEl.innerHTML = `
+            <div class="card-inner">
+              <div style="text-align:center;margin-bottom:16px;">
+                <span style="font-family:'Playfair Display';font-size:1.3rem;">✨ Our Beautiful Moments ✨</span>
+              </div>
+              <div class="carousel-container">
+                ${IMAGES.map(src => `<img class="carousel-img" src="${src}" loading="lazy" decoding="async" crossorigin="anonymous">`).join('')}
+              </div>
+              <div class="spinner-3d"></div>
+              <div class="progress-bar-container"><div class="progress-fill" id="progressFill"></div></div>
+              <div class="countdown"><span id="countdownNum">8</span> seconds</div>
+              ${renderDevFooter()}
+            </div>
+          `;
+        }
+
+        // ── Typing Animation ──
+        function startTypingAnimation() {
+            const msgEl = document.getElementById('messageText');
+            if (!msgEl) return;
+            let i = 0;
+
+            function type() {
+                if (i < MESSAGE_TEXT.length) {
+                    msgEl.innerHTML = MESSAGE_TEXT.substring(0, i + 1) + '<span class="typing-cursor"></span>';
+                    i++;
+                    setTimeout(type, 20 + Math.random() * 10);
+                } else {
+                    msgEl.innerHTML = MESSAGE_TEXT;
+                    const rc = document.getElementById('replyChoice');
+                    if (rc) rc.style.display = 'block';
+                }
+            }
+            type();
+        }
+
+        // ── Google Sheets Submit ──
+        window.submitReply = async function() {
+            const textarea = document.getElementById('replyText');
+            const replyText = textarea.value.trim();
+            if (!replyText) {
+                textarea.style.borderColor = '#ef4444';
+                setTimeout(() => textarea.style.borderColor = '', 1000);
+                return;
+            }
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.textContent = 'Sending… 💌';
+            sendBtn.disabled = true;
+
+            try {
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        recipient: 'Kettia',
+                        reply: replyText,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+            } catch (_) { /* silently fail */ }
+
+            document.getElementById('replyForm').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'block';
+        };
+
+        window.showReplyForm = function() {
+            document.getElementById('replyChoice').style.display = 'none';
+            document.getElementById('replyForm').style.display = 'block';
+            setTimeout(() => document.getElementById('replyText').focus(), 200);
+        };
+
+        window.showSilentEnding = function() {
+            document.getElementById('replyChoice').style.display = 'none';
+            document.getElementById('silentEnding').style.display = 'block';
+        };
+
+        // ── Message Screen ──
+        function renderMessageScreen() {
+            containerEl.innerHTML = `
+            <div class="card-inner">
+              <div class="recipient-name">For ${RECIPIENT_NAME}</div>
+              <div class="message-badge"><span class="badge">💌 Private message from Chris 💌</span></div>
+              <div id="messageText" class="message-content"></div>
+
+              <div id="replyChoice" class="reply-choice" style="display:none;">
+                <p>Would you like to send a reply?</p>
+                <div class="choice-buttons">
+                  <button class="btn-choice btn-yes" onclick="window.showReplyForm()">Yes, I want to reply 💬</button>
+                  <button class="btn-choice btn-no" onclick="window.showSilentEnding()">No, just read ✨</button>
+                </div>
+              </div>
+
+              <div id="replyForm" class="reply-form">
+                <textarea id="replyText" class="reply-textarea" placeholder="Write your thoughts here…"></textarea>
+                <div class="reply-actions">
+                  <button id="sendBtn" class="btn-send" onclick="window.submitReply()">Send Reply 💌</button>
+                  <button class="btn-cancel" onclick="document.getElementById('replyForm').style.display='none'; document.getElementById('replyChoice').style.display='block';">Cancel</button>
+                </div>
+              </div>
+
+              <div id="successMessage" class="success-message">
+                <div class="success-icon">❤️✨❤️</div>
+                <div class="success-title">Message Sent!</div>
+                <div class="success-text">Thank you for your reply. It means a lot.</div>
+              </div>
+
+              <div id="silentEnding" class="silent-ending">
+                <div class="silent-icon">🌙💫</div>
+                <div class="silent-text">"Sometimes the most beautiful goodbyes are the ones we hold quietly in our hearts."<br><br>Take care, Kettia. 💕</div>
+              </div>
+
+              ${renderDevFooter()}
+            </div>
+          `;
+        }
+
+        function render() {
+            if (currentScreen === 'password') renderPasswordScreen();
+            else if (currentScreen === 'loading') renderLoadingScreen();
+            else if (currentScreen === 'message') renderMessageScreen();
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  4. ANIMATION LOOP
+        // ═══════════════════════════════════════════════════════════════
+        let time = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.01;
+
+            stars.rotation.y += 0.0002;
+            stars.rotation.x += 0.00005;
+
+            orbs.forEach((orb, i) => {
+                const d = orb.userData.delay || 0;
+                orb.position.x += Math.sin(time * 0.3 + d) * 0.001;
+                orb.position.y += Math.cos(time * 0.25 + d * 1.2) * 0.001;
+                orb.scale.setScalar(1 + Math.sin(time * 0.4 + d) * 0.04);
+            });
+
+            hearts.forEach((h) => {
+                const u = h.userData;
+                u.angle += u.speed;
+                const x = Math.cos(u.angle) * u.radius;
+                const z = Math.sin(u.angle) * u.radius;
+                const y = Math.sin(time * u.floatSpeed + u.phase) * u.heightOffset;
+                h.position.set(x, y, z - 1);
+                const pulse = 1 + Math.sin(time * 1.2 + u.phase) * 0.08;
+                h.scale.set(
+                    0.3 * pulse + 0.1,
+                    0.3 * pulse + 0.1,
+                    1
+                );
+            });
+
+            const tiltStrength = 6;
+            targetRotX = mouseY * tiltStrength;
+            targetRotY = mouseX * tiltStrength;
+            currentRotX += (targetRotX - currentRotX) * 0.06;
+            currentRotY += (targetRotY - currentRotY) * 0.06;
+            if (cardEl) {
+                cardEl.style.transform =
+                    `perspective(1200px) rotateX(${currentRotX}deg) rotateY(${currentRotY}deg) translateZ(0)`;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  5. START
+        // ═══════════════════════════════════════════════════════════════
+        render();
+        animate();
+
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if (carouselInterval) clearInterval(carouselInterval);
+            if (countdownInterval) clearInterval(countdownInterval);
+        });
+    </script>
 </body>
 </html>
